@@ -1,0 +1,19 @@
+import { initializeContext } from './context'
+import { loadConfig, printStoragePaths } from './storage'
+import { runAllTasks } from './tasks'
+
+async function run(): Promise<void> {
+  const config = await loadConfig()
+  printStoragePaths()
+  const { ctx, api } = await initializeContext(config)
+  await runAllTasks({
+    config,
+    ctx,
+    api
+  })
+}
+
+run().catch((error) => {
+  console.error('[BiliTask] 执行失败', error)
+  process.exitCode = 1
+})
