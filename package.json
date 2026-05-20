@@ -1,0 +1,62 @@
+{
+  "name": "bilitasks",
+  "version": "0.1.0",
+  "description": "QingLong Node.js script for Bilibili live room and daily tasks",
+  "type": "module",
+  "main": "/src/index.ts",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "login": "tsx src/login.ts",
+    "dev": "tsx --env-file=.env src/index.ts",
+    "test": "tsx --test test/*.test.ts",
+    "format": "prettier --write ./src/**/*.{ts,js}",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "qinglong",
+    "bilibili",
+    "nodejs",
+    "typescript",
+    "esbuild"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "^11.1.1",
+      "onFail": "download"
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^24.10.0",
+    "@types/qrcode-terminal": "^0.12.2",
+    "esbuild": "^0.28.0",
+    "eslint": "^10.4.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.6.0",
+    "jiti": "^2.7.0",
+    "lint-staged": "^17.0.5",
+    "prettier": "^3.8.3",
+    "simple-git-hooks": "^2.13.1",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.59.3"
+  },
+  "dependencies": {
+    "qrcode-terminal": "^0.12.0",
+    "tough-cookie": "^6.0.1"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*.{js,ts,jsx,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
+  }
+}
