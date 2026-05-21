@@ -6,7 +6,7 @@ import { createLogger } from '../utils'
 
 export async function runAllTasks(env: TaskEnv): Promise<void> {
   const logger = createLogger('Runner')
-  const tasks: Array<[string, (env: TaskEnv) => Promise<void>]> = [
+  const tasks: [string, (env: TaskEnv) => Promise<void>][] = [
     ['login', runLoginTask],
     ['watchVideo', runWatchVideoTask],
     ['share', runShareTask],

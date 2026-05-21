@@ -1,11 +1,12 @@
 import { BiliApi } from './api'
 import { createWbiSalt } from './utils/wbi'
-import { createLogger, sleep } from './utils'
+import { createLogger, generateBLsid, sleep } from './utils'
 import {
   createCookieJar,
   getCsrfFromJar,
   getBuvid3FromJar,
-  getLiveBuvidFromJar
+  getLiveBuvidFromJar,
+  setJarCookieFields
 } from './utils/cookie'
 import type { AppConfig, BiliContext, DynamicVideo, FansMedal } from './types'
 
@@ -51,6 +52,9 @@ export async function initializeContext(
   if (!csrf) {
     throw new Error('Cookie 缺少 bili_jct，无法执行需要 CSRF 的任务')
   }
+
+  // 注入 b_lsid（Session cookie，每次任务流程初始时动态生成，不从持久化 cookie 中读取）
+  setJarCookieFields(cookieJar, { b_lsid: generateBLsid() })
 
   const ctx: BiliContext = {
     cookieJar,

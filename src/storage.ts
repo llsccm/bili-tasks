@@ -1,59 +1,70 @@
 import { defaultConfig } from './config'
 import type { AppConfig } from './types'
 import type { QinglongEnvItem } from './types/qlapi'
-import { qinglongApi } from './utils'
+import { createLogger, qinglongApi } from './utils'
 import { getConfigPath, readJson } from './utils/file'
 
 type EnvMap = Record<string, string | undefined>
-const COOKIE_ENV_NAME = 'BILI_TASK_COOKIES'
+
+/** 需要从 青龙面板/系统环境变量 中读取的所有 key */
+const ENV_KEYS = ['BILI_TASK_COOKIES', 'BILI_UA'] as const
+
 const CONFIG_PATH = getConfigPath()
+const logger = createLogger('Storage')
 
 function enabledEnvItems(items: QinglongEnvItem[] = []): QinglongEnvItem[] {
   return items.filter((item) => item.name && item.value !== undefined && item.status !== 1)
 }
 
-async function loadQinglongEnvMap(): Promise<EnvMap> {
+/**
+ * 从青龙面板批量加载环境变量，以 process.env 为兜底。
+ *
+ * @param keys - 需要查询的环境变量名列表，每个 key 会作为 searchValue 调用一次 getEnvs
+ * @returns 合并后的 EnvMap（process.env 为底层，青龙值覆盖其上）
+ */
+export async function loadQinglongEnvMap(keys: readonly string[]): Promise<EnvMap> {
+  // 以 process.env 为基础，后续用青龙返回值覆盖
+  const envMap: EnvMap = { ...process.env }
+
   const api = qinglongApi()
-  // 1. 如果没有可用的 API 实例，直接回退
   if (!api?.getEnvs) {
-    return process.env
-  }
-
-  try {
-    const res = await api.getEnvs({ searchValue: COOKIE_ENV_NAME })
-    if (res.code !== 200 || !res.data) {
-      console.warn('[Storage] QLAPI.getEnvs 返回异常，回退到系统环境变量：', res.message)
-      return process.env
-    }
-
-    const envMap: EnvMap = {}
-
-    for (const item of enabledEnvItems(res.data)) {
-      // 确保有 key 且该 key 之前未被写入过（保留第一个有效值）
-      if (!item.name || item.name in envMap) continue
-      envMap[item.name] = item.value ?? ''
-    }
-
     return envMap
-  } catch (error) {
-    console.warn('[Storage] QLAPI.getEnvs 调用失败，回退到系统环境变量：', error)
-    return process.env
   }
-}
 
-function readCookies(envMap: EnvMap, config: AppConfig): string | undefined {
-  return envMap.BILI_TASK_COOKIES || config.cookie || undefined
+  for (const key of keys) {
+    try {
+      const res = await api.getEnvs({ searchValue: key })
+
+      if (res.code !== 200 || !res.data) {
+        logger.warn(`QLAPI.getEnvs("${key}") 返回异常：`, res.message)
+        continue
+      }
+
+      for (const item of enabledEnvItems(res.data)) {
+        if (!item.name) continue
+        envMap[item.name] = item.value ?? ''
+      }
+    } catch (error) {
+      logger.warn(`QLAPI.getEnvs("${key}") 调用失败：`, error)
+    }
+  }
+
+  return envMap
 }
 
 function applyEnvConfig(config: AppConfig, envMap: EnvMap): AppConfig {
-  const cookie = readCookies(envMap, config)
+  // 读取 青龙的环境变量/系统环境变量 回退到配置文件
+  const cookie = envMap.BILI_TASK_COOKIES || config.cookie || undefined
   if (cookie) config.cookie = cookie
+
+  const ua = envMap.BILI_UA
+  if (ua) config.userAgent = ua
 
   return config
 }
 
 export async function loadConfig(): Promise<AppConfig> {
-  const envMap = await loadQinglongEnvMap()
+  const envMap = await loadQinglongEnvMap(ENV_KEYS)
   const config = readJson<AppConfig>(CONFIG_PATH, defaultConfig)
   return applyEnvConfig(config, envMap)
 }

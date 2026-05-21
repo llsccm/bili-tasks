@@ -21,8 +21,52 @@ export function random32Hash(): string {
   return randomBytes(16).toString('hex')
 }
 
+/**
+ * 生成标准 UUID v4 字符串（用于设备标识等场景）
+ */
 export function uuid(): string {
   return randomUUID()
+}
+
+/**
+ * 生成 _uuid cookie 值
+ * 格式：xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx{5位时间戳余数}infoc（大写十六进制）
+ */
+export function generateUuid(): string {
+  const b = randomBytes(16)
+  const hex = (start: number, len: number) =>
+    b
+      .subarray(start, start + len)
+      .toString('hex')
+      .toUpperCase()
+
+  const part1 = hex(0, 4) // 8位
+  const part2 = hex(4, 2) // 4位
+  const part3 = hex(6, 2) // 4位
+  const part4 = hex(8, 2) // 4位
+  const part5 = hex(10, 6) // 12位
+
+  const tsSuffix = String(Date.now() % 1e5).padStart(5, '0')
+
+  return `${part1}-${part2}-${part3}-${part4}-${part5}${tsSuffix}infoc`
+}
+
+/**
+ * 生成 b_lsid cookie 值（Session 级别，不应持久化存储）
+ * 格式：8位大写十六进制 + _ + 时间戳(毫秒)的十六进制大写
+ */
+export function generateBLsid(): string {
+  const upper = randomBytes(4).toString('hex').toUpperCase()
+  const lower = Date.now().toString(16).toUpperCase()
+  return `${upper}_${lower}`
+}
+
+/**
+ * 生成伪造的 buvid_fp（32 位十六进制字符串）
+ * 仅在环境中未提供真实值时作为回退使用。
+ */
+export function generateBuvidFp(): string {
+  return random32Hash()
 }
 
 export function md5(value: string): string {

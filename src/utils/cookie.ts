@@ -171,7 +171,11 @@ export function mergeCookieFields(
   const cookieMap = cookieMapFromSetCookies(cookie.split(';'))
 
   for (const [key, value] of Object.entries(fields)) {
-    if (value) cookieMap.set(key, value)
+    if (value !== undefined) {
+      cookieMap.set(key, value)
+    } else {
+      cookieMap.delete(key)
+    }
   }
 
   return serializeCookie(cookieMap)
