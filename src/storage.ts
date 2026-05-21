@@ -7,7 +7,7 @@ import { getConfigPath, readJson } from './utils/file'
 type EnvMap = Record<string, string | undefined>
 
 /** 需要从 青龙面板/系统环境变量 中读取的所有 key */
-const ENV_KEYS = ['BILI_TASK_COOKIES', 'BILI_TASK_UA'] as const
+const ENV_KEYS = ['BILI_TASK_COOKIES', 'BILI_UA'] as const
 
 const CONFIG_PATH = getConfigPath()
 const logger = createLogger('Storage')
@@ -41,7 +41,7 @@ export async function loadQinglongEnvMap(keys: readonly string[]): Promise<EnvMa
       }
 
       for (const item of enabledEnvItems(res.data)) {
-        if (!item.name || item.name in envMap) continue
+        if (!item.name) continue
         envMap[item.name] = item.value ?? ''
       }
     } catch (error) {
@@ -57,7 +57,7 @@ function applyEnvConfig(config: AppConfig, envMap: EnvMap): AppConfig {
   const cookie = envMap.BILI_TASK_COOKIES || config.cookie || undefined
   if (cookie) config.cookie = cookie
 
-  const ua = envMap.BILI_TASK_UA
+  const ua = envMap.BILI_UA
   if (ua) config.userAgent = ua
 
   return config
