@@ -1,3 +1,4 @@
+/* eslint-disable @stylistic/array-element-newline */
 function getFilenameFromUrl(url: string): string {
   return url.substring(url.lastIndexOf('/') + 1).split('.')[0]
 }

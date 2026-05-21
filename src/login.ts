@@ -2,14 +2,23 @@ import qrcode from 'qrcode-terminal'
 import { PassportApi } from './api/passport'
 import { defaultConfig } from './config'
 import type { AppConfig } from './types'
-import { createLogger, qinglongApi, random32Hash, sleep, uuid } from './utils'
+import {
+  createLogger,
+  generateBLsid,
+  generateBuvidFp,
+  generateUuid,
+  qinglongApi,
+  sleep
+} from './utils'
 import {
   createCookieJar,
   exportCookieString,
   getJarCookieField,
+  mergeCookieFields,
   setJarCookieFields
 } from './utils/cookie'
 import { getConfigPath, readJson, writeJson } from './utils/file'
+import { loadQinglongEnvMap } from './storage'
 
 const logger = createLogger('Login')
 const COOKIE_ENV_NAME = 'BILI_TASK_COOKIES'
@@ -17,33 +26,32 @@ const POLL_INTERVAL_MS = 15_000
 const DEFAULT_MAX_WAIT_MS = 180_000
 
 /**
- * 生成 b_lsid cookie 值。
- * 格式：8位大写十六进制 + _ + 时间戳(毫秒)的十六进制大写。
+ * 从环境变量中解析 UA 和 buvid_fp。
+ * - 若环境中无 BILI_UA 或 BILI_BUVID_FP，发出提示并回退到默认值。
  */
-function generateBLsid(): string {
-  const upper = random32Hash().slice(0, 8).toUpperCase()
-  const lower = Date.now().toString(16).toUpperCase()
-  return `${upper}_${lower}`
-  // return 'E1CCDA9F_19E3C784F0A'
-}
+async function resolveEnvFingerprint(): Promise<{ userAgent: string; buvidFp: string }> {
+  const env = await loadQinglongEnvMap(['BILI_UA', 'BILI_BUVID_FP'])
 
-/**
- * 生成 _uuid cookie 值。
- * 格式类似 UUID 但末尾追加 6 位随机数字和 "infoc" 后缀。
- */
-function generateUuid(): string {
-  const id = uuid().toUpperCase()
-  const suffix = String(Math.floor(Math.random() * 1_000_000)).padStart(6, '0')
-  return `${id}${suffix}infoc`
-  // return 'FCEEA510B-3528-DB4B-86C5-857E1077442A878064infoc'
-}
+  const envUA = env.BILI_UA?.trim()
+  const envBuvidFp = env.BILI_BUVID_FP?.trim()
 
-/**
- * 生成 buvid_fp cookie 值（32 位十六进制字符串）。
- */
-function generateBuvidFp(): string {
-  // return random32Hash()
-  return random32Hash()
+  if (!envUA || !envBuvidFp) {
+    logger.warn(
+      '未检测到环境变量 BILI_UA 或 BILI_BUVID_FP，将使用默认 UA 并伪造生成 buvid_fp。' +
+        '建议在环境中设置真实浏览器指纹以提高稳定性。'
+    )
+  }
+
+  const userAgent = envUA || defaultConfig.userAgent
+  const buvidFp = envBuvidFp || generateBuvidFp()
+
+  logger.info('浏览器 UA:', userAgent)
+  logger.info('buvid_fp:', buvidFp)
+
+  return {
+    userAgent,
+    buvidFp
+  }
 }
 
 function printQrCode(url: string): void {
@@ -117,8 +125,10 @@ async function saveCookie(cookie: string): Promise<void> {
 }
 
 async function login(): Promise<void> {
+  const { userAgent, buvidFp } = await resolveEnvFingerprint()
+
   const jar = createCookieJar()
-  const passport = new PassportApi(jar, defaultConfig.userAgent)
+  const passport = new PassportApi(jar, userAgent)
 
   // 1. 获取首页 cookie（buvid3、b_nut 等）
   await passport.fetchHomeCookie()
@@ -127,11 +137,12 @@ async function login(): Promise<void> {
     throw new Error('访问 bilibili 首页响应头 Cookie 缺少 buvid3')
   }
 
-  // 2. 补充浏览器指纹类 cookie（b_lsid、_uuid、buvid_fp）
+  // 2. 补充浏览器指纹类 cookie（_uuid、buvid_fp）
+  //    b_lsid 为 Session cookie，仅注入当次请求 jar，不写入持久化存储
   setJarCookieFields(jar, {
     b_lsid: generateBLsid(),
     _uuid: generateUuid(),
-    buvid_fp: generateBuvidFp()
+    buvid_fp: buvidFp
   })
 
   // 3. 获取 buvid4
@@ -172,8 +183,9 @@ async function login(): Promise<void> {
       const liveBuvid = await passport.fetchLiveBuvid()
       setJarCookieFields(jar, { LIVE_BUVID: liveBuvid })
 
-      // 从 jar 导出为字符串存储
-      const cookie = exportCookieString(jar)
+      // 从 jar 导出为字符串存储，过滤掉 b_lsid（Session cookie，不持久化）
+      const rawCookie = exportCookieString(jar)
+      const cookie = mergeCookieFields(rawCookie, { b_lsid: undefined })
       await saveCookie(cookie)
       return
     }

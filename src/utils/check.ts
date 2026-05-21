@@ -4,7 +4,7 @@ import { createLogger } from './index'
 function logDailyRewardStatus(config: AppConfig, reward: RewardData): void {
   const logger = createLogger('RewardCheck')
   const main = config.DailyTasks.MainSiteTasks
-  const checks: Array<[string, boolean, boolean]> = [
+  const checks: [string, boolean, boolean][] = [
     ['每日登录', main.login.enabled, reward.login],
     ['每日观看视频', main.watch.enabled, reward.watch],
     ['每日分享', main.share.enabled, reward.share],
