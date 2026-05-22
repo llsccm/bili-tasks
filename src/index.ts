@@ -2,6 +2,10 @@ import { initializeContext } from './context'
 import { loadConfig, printStoragePaths } from './storage'
 import { runAllTasks } from './tasks'
 
+/*!
+ * new Env('bilibili任务')
+ */
+
 async function run(): Promise<void> {
   const config = await loadConfig()
   printStoragePaths()

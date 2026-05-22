@@ -20,6 +20,10 @@ import {
 import { getConfigPath, readJson, writeJson } from './utils/file'
 import { loadQinglongEnvMap } from './storage'
 
+/*!
+ * new Env('bilibili扫码登录')
+ */
+
 const logger = createLogger('Login')
 const COOKIE_ENV_NAME = 'BILI_TASK_COOKIES'
 const POLL_INTERVAL_MS = 15_000
