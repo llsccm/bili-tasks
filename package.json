@@ -7,7 +7,8 @@
   "main": "/src/index.ts",
   "scripts": {
     "build": "node scripts/build.js",
-    "login": "tsx src/login.ts",
+    "login": "node --env-file=.env dist/login.mjs",
+    "login:dev": "tsx --env-file=.env src/login.ts",
     "dev": "tsx --env-file=.env src/index.ts",
     "test": "tsx --test test/*.test.ts",
     "format": "prettier --write ./src/**/*.{ts,js}",

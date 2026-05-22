@@ -2,20 +2,18 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { createTestContext } from './loadCookie'
 
-const VIDEO_AID = '116596081231786'
-
 test('api.video.share 分享默认视频', async () => {
   const { ctx, api } = createTestContext()
 
   ctx.dynamicVideos = [
     {
-      aid: VIDEO_AID,
-      bvid: '',
+      aid: '116567241132650',
+      bvid: 'BV14R5y65ECB',
       title: '默认测试视频'
     }
   ]
 
-  const res = await api.video.share(ctx.dynamicVideos[0].aid)
+  const res = await api.video.share(ctx.dynamicVideos[0].aid, ctx.dynamicVideos[0].bvid)
 
   console.log(
     'api.video.share:',

@@ -5,6 +5,11 @@ function firstVideo(ctx: BiliContext): DynamicVideo | undefined {
   return ctx.dynamicVideos[0]
 }
 
+// function randomVideo(ctx: BiliContext): DynamicVideo | undefined {
+//   if (ctx.dynamicVideos.length === 0) return undefined
+//   return ctx.dynamicVideos[randomBetween(0, ctx.dynamicVideos.length - 1)]
+// }
+
 export async function runLoginTask(env: TaskEnv): Promise<void> {
   const logger = createLogger('LoginTask')
   const task = env.config.DailyTasks.MainSiteTasks.login
@@ -55,7 +60,8 @@ export async function runShareTask(env: TaskEnv): Promise<void> {
     throw new Error('没有可用于分享任务的动态视频')
   }
 
-  const res = await env.api.video.share(video.aid)
+  await sleep(randomBetween(3000, 6000))
+  const res = await env.api.video.share(video.aid, video.bvid)
   if (res.code !== 0 && res.code !== 71000) {
     throw new Error(`分享失败：${res.message || res.msg}`)
   }

@@ -129,3 +129,27 @@ export function qinglongApi(): QinglongApi | undefined {
   const candidate = (globalThis as typeof globalThis & { QLAPI?: QinglongApi }).QLAPI
   return candidate?.getEnvs ? candidate : undefined
 }
+
+/**
+ * 解析 User-Agent 字符串：若为 Chrome 则提取对应版本生成 Sec-CH-UA，其余情况一律直接兜底。
+ */
+export function getSecChUaFromUa(ua: string): string {
+  const brandGrease = '"Not;A=Brand";v="24"'
+  const defaultChromiumVersion = '128'
+
+  // 排除 Edge (Edg/)、Opera (OPR/) 等同样包含 "Chrome/" 关键字的 Chromium 内核浏览器
+  // 确保只有纯正的 Google Chrome 进入解析逻辑
+  if (
+    ua.includes('Chrome/') &&
+    !ua.includes('Edg/') &&
+    !ua.includes('OPR/') &&
+    !ua.includes('Chromium/')
+  ) {
+    const chromeMatch = ua.match(/Chrome\/(\d+)/)
+    const version = chromeMatch ? chromeMatch[1] : defaultChromiumVersion
+    return `"Chromium";v="${version}", ${brandGrease}, "Google Chrome";v="${version}"`
+  }
+
+  // 其他所有浏览器（Firefox, Safari, Edge, Opera 等）或无法识别的 UA 直接进入兜底
+  return `"Chromium";v="${defaultChromiumVersion}", ${brandGrease}, "Google Chrome";v="${defaultChromiumVersion}"`
+}

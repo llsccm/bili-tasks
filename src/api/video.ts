@@ -9,7 +9,7 @@ import type {
   VideoHeartbeatData,
   VideoRelationData
 } from '../types'
-import { random32Hash, randomBetween, nowSec } from '../utils'
+import { random32Hash, randomBetween, nowSec, getSecChUaFromUa } from '../utils'
 
 export class VideoApi {
   private main: BiliRequest
@@ -116,15 +116,33 @@ export class VideoApi {
   /**
    * 上报视频分享行为。
    */
-  share(aid: string): Promise<BiliResponse<ShareData>> {
-    return this.main.postForm<BiliResponse<ShareData>>('/x/web-interface/share/add', {
-      aid,
-      eab_x: 2,
-      ramval: 0,
-      source: 'pc_client_normal',
-      ga: 1,
-      csrf: this.ctx.csrf
-    })
+  share(aid: string, bvid = ''): Promise<BiliResponse<ShareData>> {
+    const referer = bvid ? `https://www.bilibili.com/video/${bvid}/` : 'https://www.bilibili.com'
+    const SecCHUA = getSecChUaFromUa(this.ctx.userAgent)
+
+    return this.main.postForm<BiliResponse<ShareData>>(
+      '/x/web-interface/share/add',
+      {
+        aid,
+        eab_x: 2,
+        ramval: 0,
+        source: 'web_normal',
+        ga: 1,
+        csrf: this.ctx.csrf
+      },
+      undefined,
+      {
+        Referer: referer,
+        Origin: 'https://www.bilibili.com',
+        Priority: 'u=1, i',
+        'Sec-CH-UA': SecCHUA,
+        'Sec-CH-UA-Mobile': '?0',
+        'Sec-CH-UA-Platform': '"Windows"',
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-site'
+      }
+    )
   }
 
   /**
