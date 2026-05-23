@@ -47,7 +47,6 @@ export const defaultConfig: AppConfig = {
           '[大笑]',
           '[惊喜]',
           '[OK]',
-          '[哈欠]',
           '[墨镜]',
           '[牛]'
         ],
