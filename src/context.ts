@@ -56,6 +56,7 @@ export async function initializeContext(
   // 注入 b_lsid（Session cookie，每次任务流程初始时动态生成，不从持久化 cookie 中读取）
   setJarCookieFields(cookieJar, { b_lsid: generateBLsid() })
 
+  // 刷新效果不明显 TODO
   // const passport = new PassportApi(cookieJar, config.userAgent)
   // const biliTicket = await passport.fetchBiliTicket()
   // setJarCookieFields(cookieJar, {

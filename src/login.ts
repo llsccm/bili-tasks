@@ -189,7 +189,13 @@ async function login(): Promise<void> {
 
       // 从 jar 导出为字符串存储，过滤掉 b_lsid（Session cookie，不持久化）
       const rawCookie = exportCookieString(jar)
-      const cookie = mergeCookieFields(rawCookie, { b_lsid: undefined })
+      // bili_ticket 第二天不刷新会导致分享风控
+      const cookie = mergeCookieFields(rawCookie, {
+        b_lsid: undefined,
+        bili_ticket_expires: undefined,
+        bili_ticket: undefined
+      })
+
       await saveCookie(cookie)
       return
     }

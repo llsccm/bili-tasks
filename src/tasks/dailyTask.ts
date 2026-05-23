@@ -1,5 +1,6 @@
 import type { BiliContext, DynamicVideo, TaskEnv } from '../types'
-import { createLogger, randomBetween, sleep } from '../utils'
+import { createLogger, generateBLsid, randomBetween, sleep } from '../utils'
+import { setJarCookieFields } from '../utils/cookie'
 
 function firstVideo(ctx: BiliContext): DynamicVideo | undefined {
   return ctx.dynamicVideos[0]
@@ -36,6 +37,8 @@ export async function runWatchVideoTask(env: TaskEnv): Promise<void> {
   if (!video) {
     throw new Error('没有可用于观看任务的动态视频')
   }
+
+  setJarCookieFields(env.ctx.cookieJar, { b_lsid: generateBLsid() })
 
   const res = await env.api.video.videoHeartbeat(Number(video.aid))
   if (res.code !== 0) {

@@ -115,6 +115,9 @@ export class VideoApi {
 
   /**
    * 上报视频分享行为。
+   *
+   * eab_x: player.isPaused() ? 2 : 1
+   * ramval: player.getMediaInfo()?.absolutePlayTime
    */
   share(aid: string, bvid = ''): Promise<BiliResponse<ShareData>> {
     const referer = bvid ? `https://www.bilibili.com/video/${bvid}/` : 'https://www.bilibili.com'
@@ -125,7 +128,7 @@ export class VideoApi {
       {
         aid,
         eab_x: 2,
-        ramval: 0,
+        ramval: 5,
         source: 'web_normal',
         ga: 1,
         csrf: this.ctx.csrf
