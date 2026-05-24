@@ -1,5 +1,5 @@
 import { initializeContext } from './context'
-import { loadConfig, printStoragePaths } from './storage'
+import { loadConfig } from './storage'
 import { runAllTasks } from './tasks'
 
 /*!
@@ -8,7 +8,6 @@ import { runAllTasks } from './tasks'
 
 async function run(): Promise<void> {
   const config = await loadConfig()
-  printStoragePaths()
   const { ctx, api } = await initializeContext(config)
   await runAllTasks({
     config,

@@ -1,4 +1,4 @@
-import { BiliApi } from './api'
+import { BiliApi, PassportApi } from './api'
 import { createWbiSalt } from './utils/wbi'
 import { createLogger, generateBLsid, sleep } from './utils'
 import {
@@ -56,13 +56,13 @@ export async function initializeContext(
   // 注入 b_lsid（Session cookie，每次任务流程初始时动态生成，不从持久化 cookie 中读取）
   setJarCookieFields(cookieJar, { b_lsid: generateBLsid() })
 
-  // 刷新效果不明显 TODO
-  // const passport = new PassportApi(cookieJar, config.userAgent)
-  // const biliTicket = await passport.fetchBiliTicket()
-  // setJarCookieFields(cookieJar, {
-  //   bili_ticket: biliTicket.ticket,
-  //   bili_ticket_expires: String(biliTicket.created_at + biliTicket.ttl)
-  // })
+  // 视频分享任务需要刷新 bili_ticket 才不会风控
+  const passport = new PassportApi(cookieJar, config.userAgent)
+  const biliTicket = await passport.fetchBiliTicket()
+  setJarCookieFields(cookieJar, {
+    bili_ticket: biliTicket.ticket,
+    bili_ticket_expires: String(biliTicket.created_at + biliTicket.ttl)
+  })
 
   const ctx: BiliContext = {
     cookieJar,
