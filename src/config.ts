@@ -35,6 +35,10 @@ export const defaultConfig: AppConfig = {
         },
         isWhiteList: true,
         danmuList: [
+          '(⌒▽⌒)',
+          '（￣▽￣）',
+          '(=・ω・=)',
+          '(｀・ω・´)',
           '[dog]',
           '[花]',
           '[妙]',

@@ -1,15 +1,8 @@
 import qrcode from 'qrcode-terminal'
 import { PassportApi } from './api/passport'
 import { defaultConfig } from './config'
-import type { AppConfig } from './types'
-import {
-  createLogger,
-  generateBLsid,
-  generateBuvidFp,
-  generateUuid,
-  qinglongApi,
-  sleep
-} from './utils'
+import { envManager } from './utils/env'
+import { createLogger, generateBLsid, generateBuvidFp, generateUuid, sleep } from './utils'
 import {
   createCookieJar,
   exportCookieString,
@@ -17,8 +10,6 @@ import {
   mergeCookieFields,
   setJarCookieFields
 } from './utils/cookie'
-import { getConfigPath, readJson, writeJson } from './utils/file'
-import { loadQinglongEnvMap } from './storage'
 
 /*!
  * new Env('bilibili扫码登录')
@@ -34,7 +25,7 @@ const DEFAULT_MAX_WAIT_MS = 180_000
  * - 若环境中无 BILI_UA 或 BILI_BUVID_FP，发出提示并回退到默认值。
  */
 async function resolveEnvFingerprint(): Promise<{ userAgent: string; buvidFp: string }> {
-  const env = await loadQinglongEnvMap(['BILI_UA', 'BILI_BUVID_FP'])
+  const env = await envManager.loadEnvMap(['BILI_UA', 'BILI_BUVID_FP'])
 
   const envUA = env.BILI_UA?.trim()
   const envBuvidFp = env.BILI_BUVID_FP?.trim()
@@ -65,67 +56,8 @@ function printQrCode(url: string): void {
   })
 }
 
-async function writeQinglongCookie(cookie: string): Promise<boolean> {
-  const api = qinglongApi()
-  if (!api?.getEnvs || !api.createEnv || !api.updateEnv) return false
-
-  const envs = await api.getEnvs({ searchValue: COOKIE_ENV_NAME })
-  if (envs.code !== 200) {
-    logger.warn('青龙变量查询失败，回退写入配置文件：', envs.message)
-    return false
-  }
-
-  const existed = envs?.data?.find((item) => item.name === COOKIE_ENV_NAME)
-
-  if (existed) {
-    const res = await api.updateEnv({
-      env: {
-        ...existed,
-        name: COOKIE_ENV_NAME,
-        value: cookie,
-        remarks: existed.remarks || 'BiliTask 登录 Cookie'
-      }
-    })
-
-    if (res.code !== 200) {
-      throw new Error(`更新青龙变量失败：${res.message || res.code}`)
-    }
-
-    logger.info(`已更新青龙变量 ${COOKIE_ENV_NAME}`)
-    return true
-  }
-
-  const res = await api.createEnv({
-    envs: [
-      {
-        name: COOKIE_ENV_NAME,
-        value: cookie,
-        remarks: 'BiliTask 登录 Cookie'
-      }
-    ]
-  })
-
-  if (res.code !== 200) {
-    throw new Error(`创建青龙变量失败：${res.message || res.code}`)
-  }
-
-  logger.info(`已创建青龙变量 ${COOKIE_ENV_NAME}`)
-  return true
-}
-
-function writeConfigCookie(cookie: string): void {
-  const configPath = getConfigPath()
-  const config = readJson<AppConfig>(configPath, defaultConfig)
-  config.cookie = cookie
-  writeJson(configPath, config)
-  logger.info(`已写入本地配置文件：${configPath}`)
-}
-
 async function saveCookie(cookie: string): Promise<void> {
-  const savedToQinglong = await writeQinglongCookie(cookie)
-  if (!savedToQinglong) {
-    writeConfigCookie(cookie)
-  }
+  await envManager.saveEnv(COOKIE_ENV_NAME, cookie, { remark: 'BiliTask 登录 Cookie' })
 }
 
 async function login(): Promise<void> {
