@@ -162,6 +162,7 @@ export class EnvManager {
         existed.id,
         toBaihuPayload(name, value, {
           ...options,
+          remark: options.remark || existed.remark,
           enabled: options.enabled ?? existed.enabled
         })
       )
