@@ -2,7 +2,7 @@ import { BaihuOpenApiClient, type BaihuEnvPayload } from '../api/baihu'
 import { defaultConfig } from '../config'
 import type { AppConfig } from '../types'
 import type { QinglongEnvItem } from '../types/qlapi'
-import { createLogger, qinglongApi } from '.'
+import { createLogger, qinglongApi } from './index'
 import { getConfigPath, readJson, writeJson } from './file'
 
 export type RuntimeEnvironment = 'baihu' | 'qinglong' | 'node'
@@ -38,16 +38,9 @@ function toBaihuPayload(
 }
 
 export class EnvManager {
-  detectEnvironment(): RuntimeEnvironment {
-    if (process.env.MISE_DATA_DIR || process.env.BH_SERVER_PORT) return 'baihu'
-    if (process.env.QL_DIR || process.env.QL_BRANCH) return 'qinglong'
-    return 'node'
-  }
-
   async loadEnvMap(keys: readonly string[]): Promise<EnvMap> {
     const envMap: EnvMap = { ...process.env }
-    const environment = this.detectEnvironment()
-
+    const environment = detectEnvironment()
     if (environment !== 'qinglong') {
       return envMap
     }
@@ -84,7 +77,7 @@ export class EnvManager {
   }
 
   async saveEnv(name: string, value: string, options: SaveEnvOptions = {}): Promise<void> {
-    const environment = this.detectEnvironment()
+    const environment = detectEnvironment()
 
     if (environment === 'qinglong') {
       const saved = await this.saveQinglongEnv(name, value, options)
@@ -193,4 +186,10 @@ export const envManager = new EnvManager()
 
 export function loadEnvMap(keys: readonly string[]): Promise<EnvMap> {
   return envManager.loadEnvMap(keys)
+}
+
+export function detectEnvironment(): RuntimeEnvironment {
+  if (process.env.BH_SERVER_PORT) return 'baihu'
+  if (process.env.QL_DIR || process.env.QL_BRANCH) return 'qinglong'
+  return 'node'
 }
