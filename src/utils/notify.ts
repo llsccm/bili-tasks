@@ -1,4 +1,3 @@
-import baihu from 'baihu'
 import { createLogger, qinglongApi } from './index'
 import { detectEnvironment } from './env'
 
@@ -22,6 +21,7 @@ async function notifyQinglong(title: string, content: string): Promise<void> {
 }
 
 async function notifyBaihu(title: string, content: string): Promise<void> {
+  const { default: baihu } = await import('baihu')
   await baihu.notify(title, content)
   logger.info('白虎通知发送请求已提交')
 }
