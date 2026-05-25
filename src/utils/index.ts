@@ -153,3 +153,11 @@ export function getSecChUaFromUa(ua: string): string {
   // 其他所有浏览器（Firefox, Safari, Edge, Opera 等）或无法识别的 UA 直接进入兜底
   return `"Chromium";v="${defaultChromiumVersion}", ${brandGrease}, "Google Chrome";v="${defaultChromiumVersion}"`
 }
+
+export function formatError(error: unknown): string {
+  if (error instanceof Error) {
+    return error.stack || error.message
+  }
+
+  return String(error)
+}

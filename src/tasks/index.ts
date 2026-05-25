@@ -2,7 +2,8 @@ import { runLoginTask, runShareTask, runWatchVideoTask } from './dailyTask'
 import { runLightMedalTask, runLikeMedalTask, runWatchLiveTask } from './liveTask'
 import { runVipPrivilegeTask } from './vipTask'
 import type { TaskEnv } from '../types'
-import { createLogger } from '../utils'
+import { createLogger, formatError } from '../utils'
+import { notify } from '../utils/notify'
 
 export async function runAllTasks(env: TaskEnv): Promise<void> {
   const logger = createLogger('Runner')
@@ -21,6 +22,7 @@ export async function runAllTasks(env: TaskEnv): Promise<void> {
       await task(env)
     } catch (error) {
       logger.error(`任务 ${name} 执行失败`, error)
+      await notify('BiliTask 任务执行失败', `任务：${name}\n错误：${formatError(error)}`)
     }
   }
 

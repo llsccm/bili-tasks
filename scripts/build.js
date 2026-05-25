@@ -9,6 +9,7 @@ const result = await esbuild.build({
   platform: 'node',
   target: 'node20',
   format: 'esm',
+  external: ['baihu'],
   outdir: 'dist',
   outExtension: { '.js': '.mjs' },
   charset: 'utf8',
