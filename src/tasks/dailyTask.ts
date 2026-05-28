@@ -41,7 +41,7 @@ export async function runWatchVideoTask(env: TaskEnv): Promise<void> {
   // 通过 videoView 接口获取真实 cid 和 duration
   const viewRes = await env.api.video.videoView({ aid: Number(video.aid), bvid: video.bvid })
 
-  if (viewRes.code !== 0) throw new Error(`获取视频信息失败: ${viewRes.message || viewRes.msg}`)
+  if (viewRes.code !== 0 || !viewRes.data) throw new Error('获取视频信息失败: ' + (viewRes.message || viewRes.msg || '无数据返回'))
 
   const { cid, duration } = viewRes.data
   const startTs = nowSec()
