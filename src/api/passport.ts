@@ -51,7 +51,7 @@ export class PassportApi {
   async getFingerSpi(): Promise<FingerSpiData> {
     const res = await this.main.get<BiliResponse<FingerSpiData>>(FINGER_SPI_API)
     if (res.code !== 0 || !res.data?.b_3 || !res.data?.b_4) {
-      throw new Error(`获取 buvid3/buvid4 失败：${res.message || res.msg || res.code}`)
+      throw new Error(`获取 buvid3/buvid4 失败: ${res.message || res.msg || res.code}`)
     }
 
     return res.data
@@ -73,7 +73,7 @@ export class PassportApi {
     })
 
     if (res.code !== 0 || !res.data?.ticket) {
-      throw new Error(`获取 bili_ticket 失败：${res.message || res.msg || res.code}`)
+      throw new Error(`获取 bili_ticket 失败: ${res.message || res.msg || res.code}`)
     }
 
     logger.info('已从 Web Ticket 接口获取 bili_ticket')
@@ -120,7 +120,7 @@ export class PassportApi {
       return liveBuvid
     } catch (error) {
       const fallback = generateLiveBuvid()
-      logger.warn('获取 LIVE_BUVID 失败，使用本地生成值：', error)
+      logger.warn('获取 LIVE_BUVID 失败，使用本地生成值: ', error)
       return fallback
     }
   }
@@ -177,7 +177,7 @@ export class PassportApi {
 
     const body = JSON.parse(text) as BiliResponse<GenerateQrCodeData>
     if (body.code !== 0 || !body.data?.url || !body.data?.qrcode_key) {
-      throw new Error(`申请二维码失败：${body.message || body.msg || body.code}`)
+      throw new Error(`申请二维码失败: ${body.message || body.msg || body.code}`)
     }
 
     return body.data

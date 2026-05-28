@@ -43,7 +43,7 @@ export async function initializeContext(
   config: AppConfig
 ): Promise<{ ctx: BiliContext; api: BiliApi }> {
   if (!config.cookie) {
-    throw new Error('缺少 Cookie：请设置环境变量 BILI_TASK_COOKIES')
+    throw new Error('缺少 Cookie: 请设置环境变量 BILI_TASK_COOKIES')
   }
 
   const cookieJar = createCookieJar(config.cookie)
@@ -55,14 +55,6 @@ export async function initializeContext(
 
   // 注入 b_lsid（Session cookie，每次任务流程初始时动态生成，不从持久化 cookie 中读取）
   setJarCookieFields(cookieJar, { b_lsid: generateBLsid() })
-
-  // 视频分享任务需要刷新 bili_ticket 才不会风控
-  const passport = new PassportApi(cookieJar, config.userAgent)
-  const biliTicket = await passport.fetchBiliTicket()
-  setJarCookieFields(cookieJar, {
-    bili_ticket: biliTicket.ticket,
-    bili_ticket_expires: String(biliTicket.created_at + biliTicket.ttl)
-  })
 
   const ctx: BiliContext = {
     cookieJar,
@@ -81,12 +73,24 @@ export async function initializeContext(
   const nav = await api.user.nav()
 
   if (nav.code !== 0 || !nav.data?.isLogin) {
-    throw new Error(`nav 失败或未登录：${nav.message || nav.msg || nav.code}`)
+    throw new Error(`nav 失败或未登录: ${nav.message || nav.msg || nav.code}`)
   }
 
   ctx.userInfo = nav.data
-  ctx.wbiSalt = createWbiSalt(ctx.userInfo.wbi_img?.img_url, ctx.userInfo.wbi_img?.sub_url)
-  logger.info(`已登录：${ctx.userInfo.uname}(${ctx.userInfo.mid})`)
+
+  // 视频分享任务需要刷新 bili_ticket 才不会风控吗?
+  const passport = new PassportApi(cookieJar, config.userAgent)
+  const biliTicket = await passport.fetchBiliTicket()
+  setJarCookieFields(cookieJar, {
+    bili_ticket: biliTicket.ticket,
+    bili_ticket_expires: String(biliTicket.created_at + biliTicket.ttl)
+  })
+
+  console.log(biliTicket)
+
+  // ctx.wbiSalt = createWbiSalt(biliTicket.nav?.img_url, biliTicket.nav?.sub_url)
+  ctx.wbiSalt = createWbiSalt(nav.data.wbi_img?.img_url, nav.data.wbi_img?.sub_url)
+  logger.info(`已登录: ${ctx.userInfo.uname}(${ctx.userInfo.mid})`)
 
   const reward = await api.user.reward()
   if (reward.code === 0) {
@@ -109,7 +113,7 @@ export async function initializeContext(
       logger.warn('dynamicAll 获取失败', dynamic.message || dynamic.msg)
     }
 
-    logger.info(`动态视频数量：${ctx.dynamicVideos.length}`)
+    logger.info(`动态视频数量: ${ctx.dynamicVideos.length}`)
   }
 
   const needMedals =
@@ -138,7 +142,7 @@ export async function initializeContext(
       logger.warn('粉丝勋章获取失败', res.message || res.msg)
     }
 
-    logger.info(`粉丝勋章数量：${ctx.fansMedals.length}`)
+    logger.info(`粉丝勋章数量: ${ctx.fansMedals.length}`)
   }
 
   return { ctx, api }

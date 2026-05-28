@@ -22,7 +22,7 @@ export async function runAllTasks(env: TaskEnv): Promise<void> {
       await task(env)
     } catch (error) {
       logger.error(`任务 ${name} 执行失败`, error)
-      await notify('BiliTask 任务执行失败', `任务：${name}\n错误：${formatError(error)}`)
+      await notify('BiliTask 任务执行失败', `任务: ${name}\n错误: ${formatError(error)}`)
     }
   }
 

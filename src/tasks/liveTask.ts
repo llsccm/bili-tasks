@@ -37,9 +37,9 @@ export async function sendDanmuToMedals(
       const res = await api.live.sendMsg(danmu, medal.room_info.room_id)
 
       if (res.code === 0 && res.msg !== 'k') {
-        logger.info(`${successAction}：${medal.medal.medal_name} ${danmu}`)
+        logger.info(`${successAction}: ${medal.medal.medal_name} ${danmu}`)
       } else {
-        logger.warn(`弹幕发送异常：${res.message || res.msg}`)
+        logger.warn(`弹幕发送异常: ${res.message || res.msg}`)
       }
 
       await sleep(randomBetween(6000, 8000))
@@ -65,7 +65,7 @@ export async function runLikeMedalTask(env: TaskEnv): Promise<void> {
     const click = await getLikeMedalClickCount(env.api, medal)
 
     if (click <= 0) {
-      logger.info(`直播间点赞任务已完成：${medal.medal.medal_name} room=${medal.room_info.room_id}`)
+      logger.info(`直播间点赞任务已完成: ${medal.medal.medal_name} room=${medal.room_info.room_id}`)
     } else {
       const res = await env.api.live.likeReport(
         medal.room_info.room_id,
@@ -75,10 +75,10 @@ export async function runLikeMedalTask(env: TaskEnv): Promise<void> {
 
       if (res.code === 0) {
         logger.info(
-          `直播间点赞：${medal.medal.medal_name} room=${medal.room_info.room_id} click=${click}`
+          `直播间点赞: ${medal.medal.medal_name} room=${medal.room_info.room_id} click=${click}`
         )
       } else {
-        logger.warn(`点赞失败：${res.message || res.msg}`)
+        logger.warn(`点赞失败: ${res.message || res.msg}`)
       }
 
       if (i < medals.length - 1) {
@@ -108,7 +108,7 @@ export async function runWatchLiveTask(env: TaskEnv): Promise<void> {
     if (areaId <= 0 || parentAreaId <= 0) continue
 
     const roomId = medal.room_info.room_id
-    logger.info(`开始直播观看心跳：room=${roomId}`)
+    logger.info(`开始直播观看心跳: room=${roomId}`)
     const heart = new RoomHeart(
       env.api,
       env.ctx,
@@ -161,14 +161,14 @@ async function getLikeMedalClickCount(api: BiliApi, medal: FansMedal): Promise<n
   const res = await api.live.activatedMedalInfo(medal.medal.target_id)
 
   if (res.code !== 0) {
-    logger.warn(`点赞任务信息获取失败：${medal.medal.medal_name} ${res.message || res.msg}`)
+    logger.warn(`点赞任务信息获取失败: ${medal.medal.medal_name} ${res.message || res.msg}`)
     return 0
   }
 
   const likeTask = res.data.task_info.find((info) => info.jump_type === 'like')
 
   if (!likeTask) {
-    logger.warn(`未找到点赞任务信息：${medal.medal.medal_name}`)
+    logger.warn(`未找到点赞任务信息: ${medal.medal.medal_name}`)
     return 0
   }
 
@@ -177,7 +177,7 @@ async function getLikeMedalClickCount(api: BiliApi, medal: FansMedal): Promise<n
   const progress = likeTask.sub_title.match(/(\d+)\s*\/\s*(\d+)/)
 
   if (!progress) {
-    logger.warn(`点赞任务进度解析失败：${medal.medal.medal_name} sub_title=${likeTask.sub_title}`)
+    logger.warn(`点赞任务进度解析失败: ${medal.medal.medal_name} sub_title=${likeTask.sub_title}`)
     return 0
   }
 

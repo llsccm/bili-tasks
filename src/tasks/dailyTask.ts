@@ -1,5 +1,5 @@
 import type { BiliContext, DynamicVideo, TaskEnv } from '../types'
-import { createLogger, generateBLsid, randomBetween, sleep } from '../utils'
+import { createLogger, generateBLsid, nowSec, randomBetween, sleep } from '../utils'
 import { setJarCookieFields } from '../utils/cookie'
 
 function firstVideo(ctx: BiliContext): DynamicVideo | undefined {
@@ -40,12 +40,40 @@ export async function runWatchVideoTask(env: TaskEnv): Promise<void> {
 
   setJarCookieFields(env.ctx.cookieJar, { b_lsid: generateBLsid() })
 
-  const res = await env.api.video.videoHeartbeat(Number(video.aid))
-  if (res.code !== 0) {
-    throw new Error(`观看视频心跳失败：${res.message || res.msg}`)
+  const cid = randomBetween(30000000000, 40000000000)
+  const startTs = nowSec()
+
+  // 第一步：模拟打开视频 / 初始心跳上报（played_time=0）
+  const openRes = await env.api.video.videoHeartbeatOpen(
+    Number(video.aid),
+    video.bvid,
+    cid,
+    startTs
+  )
+
+  if (openRes.code !== 0) {
+    throw new Error(`模拟打开视频失败: ${openRes.message || openRes.msg}`)
   }
 
-  logger.info(`每日观看视频完成：${video.aid} ${video.title || ''}`)
+  logger.info(`已模拟打开视频: ${video.aid} ${video.title || ''}`)
+
+  // 等待一段随机时间，模拟真实观看间隔
+  await sleep(randomBetween(3000, 6000))
+
+  // 第二步：观看视频心跳结束上报（随机 1~14 秒播放时间）
+  const finishRes = await env.api.video.videoHeartbeatFinish(
+    Number(video.aid),
+    video.bvid,
+    cid,
+    undefined,
+    startTs
+  )
+
+  if (finishRes.code !== 0) {
+    throw new Error(`观看视频心跳结束上报失败: ${finishRes.message || finishRes.msg}`)
+  }
+
+  logger.info(`每日观看视频完成: ${video.aid} ${video.title || ''}`)
 }
 
 export async function runShareTask(env: TaskEnv): Promise<void> {
@@ -59,17 +87,30 @@ export async function runShareTask(env: TaskEnv): Promise<void> {
   }
 
   const video = firstVideo(env.ctx)
-  if (!video) {
-    throw new Error('没有可用于分享任务的动态视频')
+  if (!video) throw new Error('没有可用于分享任务的动态视频')
+
+  // 若今日尚未观看该视频，先模拟打开视频（初始心跳上报）
+  if (!env.ctx.dailyRewardInfo?.watch) {
+    setJarCookieFields(env.ctx.cookieJar, { b_lsid: generateBLsid() })
+    const openRes = await env.api.video.videoHeartbeatOpen(Number(video.aid), video.bvid)
+
+    if (openRes.code !== 0) {
+      logger.warn(`分享前模拟打开视频失败: ${openRes.message || openRes.msg}`)
+    } else {
+      logger.info(`分享前已模拟打开视频: ${video.aid}`)
+    }
+
+    await sleep(randomBetween(1000, 3000))
   }
 
-  await sleep(randomBetween(3000, 6000))
+  await sleep(randomBetween(1000, 2000))
+
   const res = await env.api.video.share(video.aid, video.bvid)
   if (res.code !== 0 && res.code !== 71000) {
-    throw new Error(`分享失败：${res.message || res.msg}`)
+    throw new Error(`分享失败: ${res.message || res.msg}`)
   }
 
-  logger.info(`每日分享完成：${video.aid}`)
+  logger.info(`每日分享完成: ${video.aid}`)
 }
 
 export async function runCoinTask(env: TaskEnv): Promise<void> {
@@ -86,7 +127,7 @@ export async function runCoinTask(env: TaskEnv): Promise<void> {
   }
 
   if (task.dryRun) {
-    logger.warn(`dry-run：需要投币 ${left} 个，未实际执行`)
+    logger.warn(`dry-run: 需要投币 ${left} 个，未实际执行`)
     return
   }
 
@@ -103,11 +144,11 @@ export async function runCoinTask(env: TaskEnv): Promise<void> {
     }
 
     if (res.code !== 0) {
-      throw new Error(`投币失败：${res.message || res.msg}`)
+      throw new Error(`投币失败: ${res.message || res.msg}`)
     }
 
     left -= count
-    logger.info(`投币成功：${video.aid} x${count}`)
+    logger.info(`投币成功: ${video.aid} x${count}`)
     if (left <= 0) break
 
     await sleep(randomBetween(3000, 6000))

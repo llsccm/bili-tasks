@@ -1,7 +1,7 @@
 import type { CookieJar } from 'tough-cookie'
 import type { BiliApi } from '../api'
 import type { FansMedal } from './fansMedal'
-import type { NavData } from './nav'
+import type { NavData, NavWbiImg } from './nav'
 
 export type { ActivatedMedalInfoData, FansMedal, FansMedalPanelData } from './fansMedal'
 export type { NavData } from './nav'
@@ -223,6 +223,7 @@ export interface BiliTicketData {
   ticket: string
   created_at: number
   ttl: number
+  nav: NavWbiImg
 }
 
 export interface GenerateQrCodeData {

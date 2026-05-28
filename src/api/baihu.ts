@@ -34,7 +34,7 @@ export class BaihuOpenApiClient {
   constructor(options?: { baseUrl?: string; token?: string }) {
     const token = options?.token || process.env.BH_SECRET_TOKEN
     if (!token) {
-      throw new Error('缺少白虎开放接口 Token：请设置环境变量 BH_SECRET_TOKEN')
+      throw new Error('缺少白虎开放接口 Token: 请设置环境变量 BH_SECRET_TOKEN')
     }
 
     this.token = token
@@ -81,13 +81,13 @@ export class BaihuOpenApiClient {
       body = text ? (JSON.parse(text) as BaihuResponse<T>) : undefined
     } catch {
       throw new Error(
-        `白虎接口响应不是合法 JSON：HTTP ${response.status} ${response.statusText} ${path}`
+        `白虎接口响应不是合法 JSON: HTTP ${response.status} ${response.statusText} ${path}`
       )
     }
 
     if (!response.ok || body?.code !== 1) {
       throw new Error(
-        `白虎接口调用失败：HTTP ${response.status} ${response.statusText} ${path} ${body?.msg || body?.code || ''}`.trim()
+        `白虎接口调用失败: HTTP ${response.status} ${response.statusText} ${path} ${body?.msg || body?.code || ''}`.trim()
       )
     }
 

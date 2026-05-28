@@ -52,7 +52,7 @@ async function resolveEnvFingerprint(): Promise<{ userAgent: string; buvidFp: st
 function printQrCode(url: string): void {
   qrcode.generate(url, { small: true }, (code: string) => {
     console.log(code)
-    logger.info('请使用哔哩哔哩客户端扫码登录：', url)
+    logger.info('请使用哔哩哔哩客户端扫码登录: ', url)
   })
 }
 
@@ -81,16 +81,16 @@ async function login(): Promise<void> {
     buvid_fp: buvidFp
   })
 
-  // 3. 获取 buvid4
-  const finger = await passport.getFingerSpi()
-  setJarCookieFields(jar, { buvid4: finger.b_4 })
-
-  // 4. 获取 bili_ticket
+  // 3. 获取 bili_ticket
   const biliTicket = await passport.fetchBiliTicket()
   setJarCookieFields(jar, {
     bili_ticket: biliTicket.ticket,
     bili_ticket_expires: String(biliTicket.created_at + biliTicket.ttl)
   })
+
+  // 4. 获取 buvid4
+  const finger = await passport.getFingerSpi()
+  setJarCookieFields(jar, { buvid4: finger.b_4 })
 
   logger.info('Cookie 环境准备完成，开始申请登录二维码')
 
@@ -109,11 +109,11 @@ async function login(): Promise<void> {
     const data = result.data
 
     if (result.code !== 0 || !data) {
-      throw new Error(`查询二维码状态失败：${result.message || result.msg || result.code}`)
+      throw new Error(`查询二维码状态失败: ${result.message || result.msg || result.code}`)
     }
 
     if (data.code === 0) {
-      logger.info(`登录成功：${data.message || '已确认'}`)
+      logger.info(`登录成功: ${data.message || '已确认'}`)
 
       // 补全 LIVE_BUVID
       const liveBuvid = await passport.fetchLiveBuvid()
@@ -146,7 +146,7 @@ async function login(): Promise<void> {
       continue
     }
 
-    logger.warn(`二维码状态：${data.code} ${data.message || result.message || ''}`)
+    logger.warn(`二维码状态: ${data.code} ${data.message || result.message || ''}`)
   }
 
   throw new Error('等待扫码登录超时，请重新运行登录流程')

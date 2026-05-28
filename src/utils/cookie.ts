@@ -160,10 +160,6 @@ function cookieMapFromSetCookies(setCookies: string[]): Map<string, string> {
   return cookieMap
 }
 
-export function normalizeCookie(setCookies: string[]): string {
-  return serializeCookie(cookieMapFromSetCookies(setCookies))
-}
-
 export function mergeCookieFields(
   cookie: string,
   fields: Record<string, string | undefined>
@@ -179,12 +175,4 @@ export function mergeCookieFields(
   }
 
   return serializeCookie(cookieMap)
-}
-
-export function getCookieField(cookie: string, name: string): string | undefined {
-  return cookie
-    .split(';')
-    .map((item) => item.trim())
-    .find((item) => item.startsWith(`${name}=`))
-    ?.slice(name.length + 1)
 }
