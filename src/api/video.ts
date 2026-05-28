@@ -171,7 +171,14 @@ export class VideoApi {
         from_spmid: '333.1365.list.card_archive.click',
         session: random32Hash(),
         track_id: '',
-        extra: `{"player_version":"4.9.76","video_dye_id":"${random32Hash()}","video_file_name":"${randomBetween(30000000000, 40000000000)}-1-${randomBetween(30000, 40000)}.m4s","play_method":1,"play_volume":1,"auto_play":0}`,
+        extra:
+          '{"player_version":"4.9.76","video_dye_id":"' +
+          random32Hash() +
+          '","video_file_name":"' +
+          cid +
+          '-1-' +
+          randomBetween(30000, 40000) +
+          '.m4s","play_method":1,"play_volume":1,"auto_play":0}',
         csrf: this.ctx.csrf
       },
       this.wbi({

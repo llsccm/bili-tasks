@@ -95,12 +95,23 @@ export async function runShareTask(env: TaskEnv): Promise<void> {
   // 若今日尚未观看该视频，先模拟打开视频（初始心跳上报）
   if (!env.ctx.dailyRewardInfo?.watch) {
     setJarCookieFields(env.ctx.cookieJar, { b_lsid: generateBLsid() })
-    const openRes = await env.api.video.videoHeartbeatOpen(Number(video.aid), video.bvid)
+    try {
+      const viewRes = await env.api.video.videoView({ aid: Number(video.aid), bvid: video.bvid })
 
-    if (openRes.code !== 0) {
-      logger.warn(`分享前模拟打开视频失败: ${openRes.message || openRes.msg}`)
-    } else {
-      logger.info(`分享前已模拟打开视频: ${video.aid}`)
+      if (viewRes.code === 0 && viewRes.data) {
+        const { cid } = viewRes.data
+        const openRes = await env.api.video.videoHeartbeatOpen(Number(video.aid), video.bvid, cid)
+
+        if (openRes.code !== 0) {
+          logger.warn('分享前模拟打开视频失败: ' + (openRes.message || openRes.msg))
+        } else {
+          logger.info('分享前已模拟打开视频: ' + video.aid)
+        }
+      } else {
+        logger.warn('分享前获取视频信息失败: ' + (viewRes.message || viewRes.msg))
+      }
+    } catch (err) {
+      logger.warn('分享前模拟打开视频异常:', err)
     }
 
     await sleep(randomBetween(1000, 3000))
