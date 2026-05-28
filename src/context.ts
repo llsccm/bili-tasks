@@ -88,7 +88,6 @@ export async function initializeContext(
 
   console.log(biliTicket)
 
-  // ctx.wbiSalt = createWbiSalt(biliTicket.nav?.img_url, biliTicket.nav?.sub_url)
   ctx.wbiSalt = createWbiSalt(nav.data.wbi_img?.img_url, nav.data.wbi_img?.sub_url)
   logger.info(`已登录: ${ctx.userInfo.uname}(${ctx.userInfo.mid})`)
 

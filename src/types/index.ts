@@ -5,6 +5,7 @@ import type { NavData, NavWbiImg } from './nav'
 
 export type { ActivatedMedalInfoData, FansMedal, FansMedalPanelData } from './fansMedal'
 export type { NavData } from './nav'
+export type { VideoViewData, VideoViewOwner, VideoViewPage, VideoViewStat } from './video'
 
 export interface BiliResponse<T = any> {
   code: number

@@ -7,7 +7,8 @@ import type {
   DynamicAllData,
   ShareData,
   VideoHeartbeatData,
-  VideoRelationData
+  VideoRelationData,
+  VideoViewData
 } from '../types'
 import { random32Hash, randomBetween, nowSec, getSecChUaFromUa } from '../utils'
 
@@ -251,5 +252,16 @@ export class VideoApi {
       ga: 1,
       csrf: this.ctx.csrf
     })
+  }
+
+  /**
+   * 获取视频详细信息（web端）。
+   * 通过 aid 或 bvid 获取视频的 cid、分P列表、时长等详细信息。
+   */
+  videoView(params: {
+    aid?: number | string
+    bvid?: string
+  }): Promise<BiliResponse<VideoViewData>> {
+    return this.main.get<BiliResponse<VideoViewData>>('/x/web-interface/view', params)
   }
 }

@@ -34,13 +34,16 @@ export async function runWatchVideoTask(env: TaskEnv): Promise<void> {
   }
 
   const video = firstVideo(env.ctx)
-  if (!video) {
-    throw new Error('没有可用于观看任务的动态视频')
-  }
+  if (!video) throw new Error('没有可用于观看任务的动态视频')
 
   setJarCookieFields(env.ctx.cookieJar, { b_lsid: generateBLsid() })
 
-  const cid = randomBetween(30000000000, 40000000000)
+  // 通过 videoView 接口获取真实 cid 和 duration
+  const viewRes = await env.api.video.videoView({ aid: Number(video.aid), bvid: video.bvid })
+
+  if (viewRes.code !== 0) throw new Error(`获取视频信息失败: ${viewRes.message || viewRes.msg}`)
+
+  const { cid, duration } = viewRes.data
   const startTs = nowSec()
 
   // 第一步：模拟打开视频 / 初始心跳上报（played_time=0）
@@ -65,7 +68,7 @@ export async function runWatchVideoTask(env: TaskEnv): Promise<void> {
     Number(video.aid),
     video.bvid,
     cid,
-    undefined,
+    duration,
     startTs
   )
 
