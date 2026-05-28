@@ -30,7 +30,7 @@ export function uuid(): string {
 
 /**
  * 生成 _uuid cookie 值
- * 格式：xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx{5位时间戳余数}infoc（大写十六进制）
+ * 格式: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx{5位时间戳余数}infoc（大写十六进制）
  */
 export function generateUuid(): string {
   const b = randomBytes(16)
@@ -53,7 +53,7 @@ export function generateUuid(): string {
 
 /**
  * 生成 b_lsid cookie 值（Session 级别，不应持久化存储）
- * 格式：8位大写十六进制 + _ + 时间戳(毫秒)的十六进制大写
+ * 格式: 8位大写十六进制 + _ + 时间戳(毫秒)的十六进制大写
  */
 export function generateBLsid(): string {
   const upper = randomBytes(4).toString('hex').toUpperCase()
@@ -131,7 +131,7 @@ export function qinglongApi(): QinglongApi | undefined {
 }
 
 /**
- * 解析 User-Agent 字符串：若为 Chrome 则提取对应版本生成 Sec-CH-UA，其余情况一律直接兜底。
+ * 解析 User-Agent 字符串: 若为 Chrome 则提取对应版本生成 Sec-CH-UA，其余情况一律直接兜底。
  */
 export function getSecChUaFromUa(ua: string): string {
   const brandGrease = '"Not;A=Brand";v="24"'

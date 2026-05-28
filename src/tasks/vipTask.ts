@@ -15,14 +15,14 @@ export async function runVipPrivilegeTask(env: TaskEnv): Promise<void> {
 
   const privilege = await env.api.vip.myPrivilege()
   if (privilege.code !== 0) {
-    throw new Error(`获取大会员权益失败：${privilege.message || privilege.msg}`)
+    throw new Error(`获取大会员权益失败: ${privilege.message || privilege.msg}`)
   }
 
   for (const item of privilege.data?.list || []) {
     if (VIP_BLACK_TYPES.has(item.type) || item.state !== 0) continue
 
     if (task.dryRun) {
-      logger.warn(`dry-run：权益 ${item.name || item.type} 未实际领取`)
+      logger.warn(`dry-run: 权益 ${item.name || item.type} 未实际领取`)
       continue
     }
 
@@ -31,9 +31,9 @@ export async function runVipPrivilegeTask(env: TaskEnv): Promise<void> {
         ? await env.api.vip.addExperience()
         : await env.api.vip.receivePrivilege(item.type)
     if (res.code === 0) {
-      logger.info(`领取权益成功：${item.name || item.type}`)
+      logger.info(`领取权益成功: ${item.name || item.type}`)
     } else {
-      logger.warn(`领取权益失败：${item.name || item.type}`, res.message || res.msg)
+      logger.warn(`领取权益失败: ${item.name || item.type}`, res.message || res.msg)
     }
 
     await sleep(randomBetween(1000, 3000))

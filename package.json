@@ -11,6 +11,7 @@
     "login:dev": "tsx --env-file=.env src/login.ts",
     "dev": "tsx --env-file=.env src/index.ts",
     "test": "tsx --test test/*.test.ts",
+    "test:share": "tsx --test test/shareTask.test.ts",
     "format": "prettier --write ./src/**/*.{ts,js}",
     "typecheck": "tsc --noEmit",
     "lint": "eslint ."

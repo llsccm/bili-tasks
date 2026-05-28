@@ -1,7 +1,9 @@
 import { createLogger, qinglongApi } from './index'
 import { detectEnvironment } from './env'
+import type BaihuSdk from 'baihu'
 
 const logger = createLogger('Notify')
+let BH: typeof BaihuSdk
 
 async function notifyQinglong(title: string, content: string): Promise<void> {
   const api = qinglongApi()
@@ -14,15 +16,15 @@ async function notifyQinglong(title: string, content: string): Promise<void> {
   const res = await api.systemNotify({ title, content })
 
   if (res.code !== 200) {
-    throw new Error(`青龙通知发送失败：${res.message || res.code}`)
+    throw new Error(`青龙通知发送失败: ${res.message || res.code}`)
   }
 
   logger.info('青龙通知发送成功')
 }
 
 async function notifyBaihu(title: string, content: string): Promise<void> {
-  const { default: baihu } = await import('baihu')
-  await baihu.notify(title, content)
+  if (!BH) BH = (await import('baihu')).default
+  await BH.notify(title, content)
   logger.info('白虎通知发送请求已提交')
 }
 
@@ -42,6 +44,6 @@ export async function notify(title: string, content: string): Promise<void> {
 
     logger.info('当前为普通 Node 环境，跳过通知发送')
   } catch (error) {
-    logger.warn('通知发送失败，已跳过：', error)
+    logger.warn('通知发送失败，已跳过: ', error)
   }
 }

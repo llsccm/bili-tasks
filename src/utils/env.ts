@@ -55,7 +55,7 @@ export class EnvManager {
         const res = await api.getEnvs({ searchValue: key })
 
         if (res.code !== 200 || !res.data) {
-          logger.warn(`QLAPI.getEnvs("${key}") 返回异常：`, res.message)
+          logger.warn(`QLAPI.getEnvs("${key}") 返回异常: `, res.message)
           continue
         }
 
@@ -64,7 +64,7 @@ export class EnvManager {
           envMap[item.name] = item.value ?? ''
         }
       } catch (error) {
-        logger.warn(`QLAPI.getEnvs("${key}") 调用失败：`, error)
+        logger.warn(`QLAPI.getEnvs("${key}") 调用失败: `, error)
       }
     }
 
@@ -103,7 +103,7 @@ export class EnvManager {
 
     const envs = await api.getEnvs({ searchValue: name })
     if (envs.code !== 200) {
-      logger.warn('青龙变量查询失败，回退写入配置文件：', envs.message)
+      logger.warn('青龙变量查询失败，回退写入配置文件: ', envs.message)
       return false
     }
 
@@ -120,7 +120,7 @@ export class EnvManager {
       })
 
       if (res.code !== 200) {
-        throw new Error(`更新青龙变量失败：${res.message || res.code}`)
+        throw new Error(`更新青龙变量失败: ${res.message || res.code}`)
       }
 
       logger.info(`已更新青龙变量 ${name}`)
@@ -138,7 +138,7 @@ export class EnvManager {
     })
 
     if (res.code !== 200) {
-      throw new Error(`创建青龙变量失败：${res.message || res.code}`)
+      throw new Error(`创建青龙变量失败: ${res.message || res.code}`)
     }
 
     logger.info(`已创建青龙变量 ${name}`)
@@ -178,7 +178,7 @@ export class EnvManager {
     const config = readJson<AppConfig>(configPath, defaultConfig)
     config.cookie = value
     writeJson(configPath, config)
-    logger.info(`已写入本地配置文件：${configPath}`)
+    logger.info(`已写入本地配置文件: ${configPath}`)
   }
 }
 
