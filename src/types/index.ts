@@ -223,7 +223,7 @@ export interface BiliTicketData {
   ticket: string
   created_at: number
   ttl: number
-  nav: NavWbiImg
+  nav?: NavWbiImg
 }
 
 export interface GenerateQrCodeData {
