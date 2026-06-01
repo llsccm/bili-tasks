@@ -174,13 +174,13 @@ export async function ensureBiliTicket(config: AppConfig, ctx: BiliContext): Pro
     bili_ticket_expires: String(expiresAt)
   })
 
+  // 同步更新运行时配置
+  config._biliTicketCache = { ticket: data.ticket, expiresAt }
+
   // 回写配置文件缓存
   const configPath = getConfigPath()
   const fileConfig = readJson<AppConfig>(configPath, defaultConfig)
   fileConfig._biliTicketCache = { ticket: data.ticket, expiresAt }
   writeJson(configPath, fileConfig)
   logger.info('bili_ticket 已缓存到配置文件')
-
-  // 同步更新运行时配置
-  config._biliTicketCache = { ticket: data.ticket, expiresAt }
 }
