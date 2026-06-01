@@ -52,9 +52,19 @@ export interface VipPrivilegeConfig {
   dryRun: boolean
 }
 
+export interface BiliTicketCache {
+  ticket: string
+  /** ticket 过期的 Unix 时间戳（秒） */
+  expiresAt: number
+}
+
 export interface AppConfig {
   cookie: string
   userAgent: string
+  /** Cookie 刷新所需的持久化刷新口令，对应浏览器 localStorage 中的 ac_time_value。 */
+  refreshToken?: string
+  /** biliTicket 缓存，由运行时自动管理，无需手动配置 */
+  _biliTicketCache?: BiliTicketCache
   DailyTasks: {
     MainSiteTasks: {
       login: MainTaskConfig
@@ -230,6 +240,29 @@ export interface BiliTicketData {
 export interface GenerateQrCodeData {
   url: string
   qrcode_key: string
+}
+
+export interface CookieRefreshInfoData {
+  refresh: boolean
+  timestamp: number
+}
+
+export interface CookieRefreshData {
+  status: number
+  message: string
+  refresh_token: string
+}
+
+export interface ConfirmCookieRefreshData {
+  code: number
+  message?: string
+  ttl?: number
+}
+
+export interface RefreshCsrfData {
+  refreshCsrf: string
+  correspondPath: string
+  timestamp: number
 }
 
 export interface PollQrCodeData {

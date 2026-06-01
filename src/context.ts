@@ -1,14 +1,16 @@
 import { BiliApi, PassportApi } from './api'
-import { createWbiSalt } from './utils/wbi'
-import { createLogger, generateBLsid, sleep } from './utils'
+import { defaultConfig } from './config'
+import type { AppConfig, BiliContext, DynamicVideo, FansMedal } from './types'
+import { createLogger, generateBLsid, randomBetween, sleep } from './utils'
 import {
   createCookieJar,
-  getCsrfFromJar,
   getBuvid3FromJar,
+  getCsrfFromJar,
   getLiveBuvidFromJar,
   setJarCookieFields
 } from './utils/cookie'
-import type { AppConfig, BiliContext, DynamicVideo, FansMedal } from './types'
+import { getConfigPath, readJson, writeJson } from './utils/file'
+import { createWbiSalt } from './utils/wbi'
 
 const logger = createLogger('Context')
 
@@ -46,6 +48,8 @@ export async function initializeContext(
     throw new Error('缺少 Cookie: 请设置环境变量 BILI_TASK_COOKIES')
   }
 
+  await sleep(randomBetween(6000, 60000))
+
   const cookieJar = createCookieJar(config.cookie)
   const csrf = getCsrfFromJar(cookieJar)
 
@@ -78,18 +82,10 @@ export async function initializeContext(
 
   ctx.userInfo = nav.data
 
-  // 视频分享任务需要刷新 bili_ticket 才不会风控吗?
-  const passport = new PassportApi(cookieJar, config.userAgent)
-  const biliTicket = await passport.fetchBiliTicket()
-  setJarCookieFields(cookieJar, {
-    bili_ticket: biliTicket.ticket,
-    bili_ticket_expires: String(biliTicket.created_at + biliTicket.ttl)
-  })
-
-  console.log(biliTicket)
-
   ctx.wbiSalt = createWbiSalt(nav.data.wbi_img?.img_url, nav.data.wbi_img?.sub_url)
   logger.info(`已登录: ${ctx.userInfo.uname}(${ctx.userInfo.mid})`)
+
+  await sleep(randomBetween(6000, 60000))
 
   const reward = await api.user.reward()
   if (reward.code === 0) {
@@ -145,4 +141,46 @@ export async function initializeContext(
   }
 
   return { ctx, api }
+}
+
+/**
+ * 确保 biliTicket 可用（仅用于分享视频任务）。
+ * 优先使用配置中的缓存，过期则重新请求并回写配置文件。
+ */
+export async function ensureBiliTicket(config: AppConfig, ctx: BiliContext): Promise<void> {
+  const now = Math.floor(Date.now() / 1000)
+  const cache = config._biliTicketCache
+
+  // 缓存存在且未过期（预留 60 秒余量）
+  if (cache && cache.ticket && cache.expiresAt - now > 60) {
+    logger.info('使用缓存的 bili_ticket')
+    setJarCookieFields(ctx.cookieJar, {
+      bili_ticket: cache.ticket,
+      bili_ticket_expires: String(cache.expiresAt)
+    })
+    return
+  }
+
+  // 缓存不存在或已过期，重新请求
+  logger.info('bili_ticket 缓存不存在或已过期，重新请求')
+  const passport = new PassportApi(ctx.cookieJar, ctx.userAgent)
+  const data = await passport.fetchBiliTicket()
+
+  const expiresAt = data.created_at + data.ttl
+
+  // 注入 cookieJar
+  setJarCookieFields(ctx.cookieJar, {
+    bili_ticket: data.ticket,
+    bili_ticket_expires: String(expiresAt)
+  })
+
+  // 同步更新运行时配置
+  config._biliTicketCache = { ticket: data.ticket, expiresAt }
+
+  // 回写配置文件缓存
+  const configPath = getConfigPath()
+  const fileConfig = readJson<AppConfig>(configPath, defaultConfig)
+  fileConfig._biliTicketCache = { ticket: data.ticket, expiresAt }
+  writeJson(configPath, fileConfig)
+  logger.info('bili_ticket 已缓存到配置文件')
 }
