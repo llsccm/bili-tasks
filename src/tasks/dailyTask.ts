@@ -1,6 +1,7 @@
 import type { BiliContext, DynamicVideo, TaskEnv } from '../types'
 import { createLogger, generateBLsid, nowSec, randomBetween, sleep } from '../utils'
 import { setJarCookieFields } from '../utils/cookie'
+import { ensureBiliTicket } from '../context'
 
 function firstVideo(ctx: BiliContext): DynamicVideo | undefined {
   return ctx.dynamicVideos[0]
@@ -41,7 +42,8 @@ export async function runWatchVideoTask(env: TaskEnv): Promise<void> {
   // 通过 videoView 接口获取真实 cid 和 duration
   const viewRes = await env.api.video.videoView({ aid: Number(video.aid), bvid: video.bvid })
 
-  if (viewRes.code !== 0 || !viewRes.data) throw new Error('获取视频信息失败: ' + (viewRes.message || viewRes.msg || '无数据返回'))
+  if (viewRes.code !== 0 || !viewRes.data)
+    throw new Error('获取视频信息失败: ' + (viewRes.message || viewRes.msg || '无数据返回'))
 
   const { cid, duration } = viewRes.data
   const startTs = nowSec()
@@ -116,6 +118,9 @@ export async function runShareTask(env: TaskEnv): Promise<void> {
 
     await sleep(randomBetween(1000, 3000))
   }
+
+  // 分享任务需要 bili_ticket，确保其可用（检查缓存/过期后重新请求）
+  await ensureBiliTicket(env.config, env.ctx)
 
   await sleep(randomBetween(1000, 2000))
 

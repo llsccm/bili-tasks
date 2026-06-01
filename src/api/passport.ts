@@ -1,11 +1,15 @@
-import { randomUUID } from 'node:crypto'
+import { randomUUID, webcrypto } from 'node:crypto'
 import type { CookieJar } from 'tough-cookie'
 import type {
   BiliResponse,
   BiliTicketData,
+  ConfirmCookieRefreshData,
+  CookieRefreshData,
+  CookieRefreshInfoData,
   FingerSpiData,
   GenerateQrCodeData,
-  PollQrCodeData
+  PollQrCodeData,
+  RefreshCsrfData
 } from '../types'
 import { createLogger, hmacHex } from '../utils'
 import {
@@ -24,10 +28,43 @@ const BILI_TICKET_API = 'https://api.bilibili.com/bapis/bilibili.api.ticket.v1.T
 const LIVE_GETSHOWINFO_API = 'https://api.live.bilibili.com/live_user/v1/UserCenter/getShowInfo'
 const QRCODE_GENERATE_API = 'https://passport.bilibili.com/x/passport-login/web/qrcode/generate'
 const QRCODE_POLL_API = 'https://passport.bilibili.com/x/passport-login/web/qrcode/poll'
+const COOKIE_INFO_API = 'https://passport.bilibili.com/x/passport-login/web/cookie/info'
+const COOKIE_REFRESH_API = 'https://passport.bilibili.com/x/passport-login/web/cookie/refresh'
+const COOKIE_REFRESH_CONFIRM_API = 'https://passport.bilibili.com/x/passport-login/web/confirm/refresh'
+const CORRESPOND_BASE_URL = 'https://www.bilibili.com/correspond/1'
+const CORRESPOND_PUBLIC_KEY_JWK: JsonWebKey = {
+  kty: 'RSA',
+  n: 'y4HdjgJHBlbaBN04VERG4qNBIFHP6a3GozCl75AihQloSWCXC5HDNgyinEnhaQ_4-gaMud_GF50elYXLlCToR9se9Z8z433U3KjM-3Yx7ptKkmQNAMggQwAVKgq3zYAoidNEWuxpkY_mAitTSRLnsJW-NCTa0bqBFF6Wm1MxgfE',
+  e: 'AQAB'
+}
+
+let correspondPublicKeyPromise: Promise<webcrypto.CryptoKey> | undefined
 
 function generateLiveBuvid(): string {
   const numeric = BigInt(`0x${randomUUID().replaceAll('-', '')}`) % 10_000_000_000_000_000n
   return `AUTO${numeric.toString().padStart(16, '0')}`
+}
+
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes, (item) => item.toString(16).padStart(2, '0')).join('')
+}
+
+function getCorrespondPublicKey(): Promise<webcrypto.CryptoKey> {
+  if (!correspondPublicKeyPromise) {
+    correspondPublicKeyPromise = webcrypto.subtle.importKey(
+      'jwk',
+      CORRESPOND_PUBLIC_KEY_JWK,
+      { name: 'RSA-OAEP', hash: 'SHA-256' },
+      false,
+      ['encrypt']
+    )
+  }
+
+  return correspondPublicKeyPromise
+}
+
+function extractRefreshCsrf(html: string): string | undefined {
+  return html.match(/<div\s+[^>]*id=["']1-name["'][^>]*>([^<]+)<\/div>/i)?.[1]?.trim()
 }
 
 export class PassportApi {
@@ -78,6 +115,91 @@ export class PassportApi {
 
     logger.info('已从 Web Ticket 接口获取 bili_ticket')
     return res.data
+  }
+
+  /**
+   * 检查当前 Cookie 是否需要刷新。
+   */
+  checkCookieRefresh(): Promise<BiliResponse<CookieRefreshInfoData>> {
+    const csrf = getJarCookieField(this.jar, 'bili_jct') || ''
+    return this.main.get<BiliResponse<CookieRefreshInfoData>>(COOKIE_INFO_API, csrf ? { csrf } : undefined)
+  }
+
+  /**
+   * 生成用于获取 refresh_csrf 的 correspondPath。
+   */
+  async generateCorrespondPath(timestamp: number): Promise<string> {
+    const publicKey = await getCorrespondPublicKey()
+    const data = new TextEncoder().encode(`refresh_${timestamp}`)
+    const encrypted = await webcrypto.subtle.encrypt({ name: 'RSA-OAEP' }, publicKey, data)
+
+    return bytesToHex(new Uint8Array(encrypted))
+  }
+
+  /**
+   * 请求 Correspond 页面并提取实时刷新口令 refresh_csrf。
+   */
+  async fetchRefreshCsrf(timestamp = Date.now()): Promise<RefreshCsrfData> {
+    const correspondPath = await this.generateCorrespondPath(timestamp)
+    const url = `${CORRESPOND_BASE_URL}/${correspondPath}`
+    const cookie = getCookieString(this.jar, url)
+    const res = await fetch(url, {
+      headers: {
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        Referer: BILI_HOME_URL,
+        'User-Agent': this.userAgent,
+        ...(cookie ? { Cookie: cookie } : {})
+      },
+      redirect: 'manual'
+    })
+    const html = await res.text()
+
+    if (!res.ok) {
+      throw new Error(`获取 refresh_csrf 失败: HTTP ${res.status} ${res.statusText}: ${html.slice(0, 500)}`)
+    }
+
+    const refreshCsrf = extractRefreshCsrf(html)
+    if (!refreshCsrf) {
+      throw new Error('获取 refresh_csrf 失败: Correspond 页面中未找到 id="1-name" 标签')
+    }
+
+    return {
+      refreshCsrf,
+      correspondPath,
+      timestamp
+    }
+  }
+
+  /**
+   * 刷新 Cookie。成功后响应 Set-Cookie 会自动写入当前 CookieJar，并返回新的 refresh_token。
+   */
+  async refreshCookie(refreshToken: string, refreshCsrf: string): Promise<BiliResponse<CookieRefreshData>> {
+    const csrf = getJarCookieField(this.jar, 'bili_jct') || ''
+    if (!csrf) {
+      throw new Error('Cookie 缺少 bili_jct，无法刷新 Cookie')
+    }
+
+    return this.main.postForm<BiliResponse<CookieRefreshData>>(COOKIE_REFRESH_API, {
+      csrf,
+      refresh_csrf: refreshCsrf,
+      source: 'main_web',
+      refresh_token: refreshToken
+    })
+  }
+
+  /**
+   * 确认 Cookie 已更新，使旧 refresh_token 对应的 Cookie 失效。
+   */
+  confirmCookieRefresh(oldRefreshToken: string): Promise<ConfirmCookieRefreshData> {
+    const csrf = getJarCookieField(this.jar, 'bili_jct') || ''
+    if (!csrf) {
+      throw new Error('Cookie 缺少 bili_jct，无法确认 Cookie 更新')
+    }
+
+    return this.main.postForm<ConfirmCookieRefreshData>(COOKIE_REFRESH_CONFIRM_API, {
+      csrf,
+      refresh_token: oldRefreshToken
+    })
   }
 
   /**

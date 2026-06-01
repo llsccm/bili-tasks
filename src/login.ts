@@ -2,6 +2,7 @@ import qrcode from 'qrcode-terminal'
 import { PassportApi } from './api/passport'
 import { defaultConfig } from './config'
 import { envManager } from './utils/env'
+import { saveRefreshToken } from './storage'
 import { createLogger, generateBLsid, generateBuvidFp, generateUuid, sleep } from './utils'
 import {
   createCookieJar,
@@ -114,6 +115,13 @@ async function login(): Promise<void> {
 
     if (data.code === 0) {
       logger.info(`登录成功: ${data.message || '已确认'}`)
+
+      if (data.refresh_token) {
+        saveRefreshToken(data.refresh_token)
+        logger.info('已保存登录返回的 refresh_token 到配置文件')
+      } else {
+        logger.warn('登录成功但响应缺少 refresh_token，无法写入配置文件')
+      }
 
       // 补全 LIVE_BUVID
       const liveBuvid = await passport.fetchLiveBuvid()

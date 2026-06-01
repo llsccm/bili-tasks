@@ -6,6 +6,7 @@ const DEFAULT_UA =
 export const defaultConfig: AppConfig = {
   cookie: '',
   userAgent: DEFAULT_UA,
+  refreshToken: '',
   DailyTasks: {
     MainSiteTasks: {
       login: { enabled: true },
