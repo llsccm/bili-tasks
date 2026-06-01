@@ -44,11 +44,11 @@ function mergeMedalList(raw: any): FansMedal[] {
 export async function initializeContext(
   config: AppConfig
 ): Promise<{ ctx: BiliContext; api: BiliApi }> {
-  await sleep(randomBetween(6000, 60000))
-
   if (!config.cookie) {
     throw new Error('缺少 Cookie: 请设置环境变量 BILI_TASK_COOKIES')
   }
+
+  await sleep(randomBetween(6000, 60000))
 
   const cookieJar = createCookieJar(config.cookie)
   const csrf = getCsrfFromJar(cookieJar)
