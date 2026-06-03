@@ -93,7 +93,7 @@ export class RoomHeart {
   }
 
   private async loopX(): Promise<void> {
-    while (this.watchedSeconds < this.config.time * 60) {
+    while (this.watchedSeconds < this.config.maxTime * 60) {
       const now = nowMs()
 
       const spyderData: SpyderData = {

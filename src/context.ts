@@ -48,7 +48,7 @@ export async function initializeContext(
     throw new Error('缺少 Cookie: 请设置环境变量 BILI_TASK_COOKIES')
   }
 
-  await sleep(randomBetween(6000, 60000))
+  logger.info('初始化')
 
   const cookieJar = createCookieJar(config.cookie)
   const csrf = getCsrfFromJar(cookieJar)
@@ -56,6 +56,8 @@ export async function initializeContext(
   if (!csrf) {
     throw new Error('Cookie 缺少 bili_jct，无法执行需要 CSRF 的任务')
   }
+
+  await sleep(randomBetween(60000, 300000))
 
   // 注入 b_lsid（Session cookie，每次任务流程初始时动态生成，不从持久化 cookie 中读取）
   setJarCookieFields(cookieJar, { b_lsid: generateBLsid() })
@@ -85,14 +87,14 @@ export async function initializeContext(
   ctx.wbiSalt = createWbiSalt(nav.data.wbi_img?.img_url, nav.data.wbi_img?.sub_url)
   logger.info(`已登录: ${ctx.userInfo.uname}(${ctx.userInfo.mid})`)
 
-  await sleep(randomBetween(6000, 60000))
-
   const reward = await api.user.reward()
   if (reward.code === 0) {
     ctx.dailyRewardInfo = reward.data
   } else {
     logger.warn('reward 获取失败', reward.message || reward.msg)
   }
+
+  if (ctx.dailyRewardInfo?.share === false) await sleep(randomBetween(12000, 60000))
 
   const needDynamic =
     config.DailyTasks.MainSiteTasks.watch.enabled ||
