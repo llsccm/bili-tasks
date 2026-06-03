@@ -65,7 +65,7 @@ Bilibili 每日任务脚本，使用 TypeScript 编写并通过 esbuild 打包�
         },
         "watch": {
           "enabled": true,
-          "time": 16,
+          "maxTime": 15,
           "maxRooms": 5
         },
         "isWhiteList": true,

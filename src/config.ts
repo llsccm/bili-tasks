@@ -31,7 +31,7 @@ export const defaultConfig: AppConfig = {
         },
         watch: {
           enabled: false,
-          time: 16,
+          maxTime: 15,
           maxRooms: 5
         },
         isWhiteList: true,

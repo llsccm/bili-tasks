@@ -104,15 +104,18 @@ export async function runWatchLiveTask(env: TaskEnv): Promise<void> {
   const medals = filterMedals(env.config, env.ctx.fansMedals, true).slice(0, task.maxRooms)
 
   for (const medal of medals) {
+    const watchMinutes = await getWatchMedalMinutes(env.api, medal, task.maxTime)
+    if (watchMinutes <= 0) continue
+
     const [areaId, parentAreaId] = await getAreaInfo(env.api, medal)
     if (areaId <= 0 || parentAreaId <= 0) continue
 
     const roomId = medal.room_info.room_id
-    logger.info(`开始直播观看心跳: room=${roomId}`)
+    logger.info(`开始直播观看心跳: room=${roomId} minutes=${watchMinutes}`)
     const heart = new RoomHeart(
       env.api,
       env.ctx,
-      task,
+      { ...task, maxTime: watchMinutes },
       roomId,
       areaId,
       parentAreaId,
@@ -185,7 +188,51 @@ async function getLikeMedalClickCount(api: BiliApi, medal: FansMedal): Promise<n
   const total = Number(progress[2])
   const needCount = Math.max(total - current, 0)
 
-  return needCount * 30 + randomBetween(0, 10)
+  return needCount * 30 + randomBetween(0, 5)
+}
+
+async function getWatchMedalMinutes(
+  api: BiliApi,
+  medal: FansMedal,
+  maxTime: number
+): Promise<number> {
+  const logger = createLogger('WatchLiveTask')
+  const res = await api.live.activatedMedalInfo(medal.medal.target_id)
+
+  if (res.code !== 0) {
+    logger.warn(`观看任务信息获取失败: ${medal.medal.medal_name} ${res.message || res.msg}`)
+    return 0
+  }
+
+  const watchTask = res.data?.task_info?.find((info) => info.jump_type === 'watchLive')
+
+  if (!watchTask) {
+    logger.warn(`未找到观看任务信息: ${medal.medal.medal_name}`)
+    return 0
+  }
+
+  if (watchTask.is_done) {
+    logger.info(`直播观看任务已完成: ${medal.medal.medal_name}`)
+    return 0
+  }
+
+  const progress = watchTask.sub_title?.match(/(\d+)\s*\/\s*(\d+)/)
+
+  if (!progress) {
+    logger.warn(`观看任务进度解析失败: ${medal.medal.medal_name} sub_title=${watchTask.sub_title}`)
+    return 0
+  }
+
+  const current = Number(progress[1])
+  const total = Number(progress[2])
+  const needMinutes = Math.max(total - current, 0) * 15
+  const watchMinutes = Math.min(needMinutes, maxTime) + 1
+
+  logger.info(
+    `直播观看任务进度: ${medal.medal.medal_name} ${current}/${total} need=${needMinutes}min watch=${watchMinutes}min`
+  )
+
+  return watchMinutes
 }
 
 async function getAreaInfo(api: BiliApi, medal: FansMedal): Promise<[number, number]> {

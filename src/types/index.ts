@@ -34,7 +34,7 @@ export interface MedalLikeConfig extends MainTaskConfig {
 }
 
 export interface MedalWatchConfig extends MainTaskConfig {
-  time: number
+  maxTime: number
   maxRooms: number
 }
 
