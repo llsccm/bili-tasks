@@ -204,7 +204,7 @@ async function getWatchMedalMinutes(
     return 0
   }
 
-  const watchTask = res.data.task_info.find((info) => info.jump_type === 'watchLive')
+  const watchTask = res.data?.task_info?.find((info) => info.jump_type === 'watchLive')
 
   if (!watchTask) {
     logger.warn(`未找到观看任务信息: ${medal.medal.medal_name}`)
@@ -216,7 +216,7 @@ async function getWatchMedalMinutes(
     return 0
   }
 
-  const progress = watchTask.sub_title.match(/(\d+)\s*\/\s*(\d+)/)
+  const progress = watchTask.sub_title?.match(/(\d+)\s*\/\s*(\d+)/)
 
   if (!progress) {
     logger.warn(`观看任务进度解析失败: ${medal.medal.medal_name} sub_title=${watchTask.sub_title}`)
