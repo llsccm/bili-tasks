@@ -1,6 +1,6 @@
 {
   "name": "bilitasks",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "packageManager": "pnpm@11.1.3",
   "description": "QingLong Node.js script for Bilibili live room and daily tasks",
   "type": "module",
