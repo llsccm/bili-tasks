@@ -11,7 +11,7 @@ export const defaultConfig: AppConfig = {
     MainSiteTasks: {
       login: { enabled: true },
       watch: { enabled: true },
-      share: { enabled: true },
+      share: { enabled: false },
       coin: {
         enabled: false,
         num: 1,

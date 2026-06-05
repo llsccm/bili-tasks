@@ -47,4 +47,5 @@ tmp/
 .claude/
 .roo/
 .roo-cache/
+.serena
 bilitask.config.json

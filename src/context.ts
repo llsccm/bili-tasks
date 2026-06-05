@@ -1,14 +1,19 @@
+import type { CookieJar } from 'tough-cookie'
 import { BiliApi, PassportApi } from './api'
 import { defaultConfig } from './config'
+import { saveRefreshToken } from './storage'
 import type { AppConfig, BiliContext, DynamicVideo, FansMedal } from './types'
 import { createLogger, generateBLsid, randomBetween, sleep } from './utils'
 import {
   createCookieJar,
+  exportCookieString,
   getBuvid3FromJar,
   getCsrfFromJar,
   getLiveBuvidFromJar,
+  mergeCookieFields,
   setJarCookieFields
 } from './utils/cookie'
+import { envManager } from './utils/env'
 import { getConfigPath, readJson, writeJson } from './utils/file'
 import { createWbiSalt } from './utils/wbi'
 
@@ -48,16 +53,15 @@ export async function initializeContext(
     throw new Error('缺少 Cookie: 请设置环境变量 BILI_TASK_COOKIES')
   }
 
-  logger.info('初始化')
-
   const cookieJar = createCookieJar(config.cookie)
-  const csrf = getCsrfFromJar(cookieJar)
+  let csrf = getCsrfFromJar(cookieJar)
 
   if (!csrf) {
     throw new Error('Cookie 缺少 bili_jct，无法执行需要 CSRF 的任务')
   }
 
-  await sleep(randomBetween(60000, 300000))
+  logger.info('初始化, 随机延迟中...')
+  await sleep(randomBetween(60000, 120000))
 
   // 注入 b_lsid（Session cookie，每次任务流程初始时动态生成，不从持久化 cookie 中读取）
   setJarCookieFields(cookieJar, { b_lsid: generateBLsid() })
@@ -87,6 +91,19 @@ export async function initializeContext(
   ctx.wbiSalt = createWbiSalt(nav.data.wbi_img?.img_url, nav.data.wbi_img?.sub_url)
   logger.info(`已登录: ${ctx.userInfo.uname}(${ctx.userInfo.mid})`)
 
+  await ensureBiliTicket(config, ctx)
+
+  try {
+    await checkAndRefreshCookie(cookieJar, config.userAgent, config)
+    csrf = getCsrfFromJar(cookieJar)
+
+    if (!csrf) throw new Error('Cookie 刷新后缺少 bili_jct，无法执行需要 CSRF 的任务')
+
+    ctx.csrf = csrf
+  } catch (error) {
+    logger.warn('Cookie 刷新流程异常，继续使用当前 Cookie:', error)
+  }
+
   const reward = await api.user.reward()
   if (reward.code === 0) {
     ctx.dailyRewardInfo = reward.data
@@ -94,7 +111,7 @@ export async function initializeContext(
     logger.warn('reward 获取失败', reward.message || reward.msg)
   }
 
-  if (ctx.dailyRewardInfo?.share === false) await sleep(randomBetween(12000, 60000))
+  if (ctx.dailyRewardInfo?.share === false) await sleep(randomBetween(60000, 300000))
 
   const needDynamic =
     config.DailyTasks.MainSiteTasks.watch.enabled ||
@@ -146,10 +163,10 @@ export async function initializeContext(
 }
 
 /**
- * 确保 biliTicket 可用（仅用于分享视频任务）。
- * 优先使用配置中的缓存，过期则重新请求并回写配置文件。
+ * 确保 biliTicket 可用
+ * 优先使用配置中的缓存，过期则重新请求并回写配置文件
  */
-export async function ensureBiliTicket(config: AppConfig, ctx: BiliContext): Promise<void> {
+async function ensureBiliTicket(config: AppConfig, ctx: BiliContext): Promise<void> {
   const now = Math.floor(Date.now() / 1000)
   const cache = config._biliTicketCache
 
@@ -185,4 +202,75 @@ export async function ensureBiliTicket(config: AppConfig, ctx: BiliContext): Pro
   fileConfig._biliTicketCache = { ticket: data.ticket, expiresAt }
   writeJson(configPath, fileConfig)
   logger.info('bili_ticket 已缓存到配置文件')
+}
+
+/**
+ * 检查 Cookie 是否需要刷新，如果需要且存在 refreshToken 则执行完整刷新流程
+ * 刷新成功后会更新 CookieJar、持久化新 Cookie 和新 refreshToken
+ */
+async function checkAndRefreshCookie(
+  cookieJar: CookieJar,
+  userAgent: string,
+  config: AppConfig
+): Promise<void> {
+  const passport = new PassportApi(cookieJar, userAgent)
+
+  logger.info('检查 Cookie 是否需要刷新')
+  const info = await passport.checkCookieRefresh()
+
+  if (info.code !== 0) {
+    logger.warn('Cookie 刷新检查接口异常', info.message || info.msg)
+    return
+  }
+
+  if (!info.data?.refresh) {
+    logger.info('Cookie 无需刷新')
+    return
+  }
+
+  // 需要刷新
+  const oldRefreshToken = config.refreshToken
+  if (!oldRefreshToken) {
+    logger.warn(
+      'Cookie 需要刷新，但配置中缺少 refreshToken（ac_time_value），跳过刷新。' +
+        '请通过登录流程获取 refreshToken 后写入配置文件。'
+    )
+    return
+  }
+
+  logger.info('Cookie 需要刷新，开始刷新流程')
+
+  // 1. 获取 refresh_csrf
+  const { refreshCsrf, timestamp } = await passport.fetchRefreshCsrf(info.data.timestamp)
+  logger.info(`已获取 refresh_csrf (timestamp=${timestamp})`)
+
+  // 2. 刷新 Cookie（响应 Set-Cookie 会自动写入 CookieJar）
+  const refreshRes = await passport.refreshCookie(oldRefreshToken, refreshCsrf)
+
+  if (refreshRes.code !== 0 || !refreshRes.data?.refresh_token) {
+    throw new Error(`Cookie 刷新失败: ${refreshRes.message || refreshRes.msg || refreshRes.code}`)
+  }
+
+  const newRefreshToken = refreshRes.data.refresh_token
+  logger.info('Cookie 刷新成功，确认更新并使旧 Cookie 失效')
+
+  // 3. 确认刷新，使旧 refresh_token 对应的 Cookie 失效
+  await passport.confirmCookieRefresh(oldRefreshToken)
+
+  // 4. 持久化新 refresh_token
+  saveRefreshToken(newRefreshToken)
+  config.refreshToken = newRefreshToken
+  logger.info('已保存新 refreshToken 到配置文件')
+
+  // 5. 持久化新 Cookie（过滤 Session cookie 和 bili_ticket）
+  const rawCookie = exportCookieString(cookieJar)
+  const cookie = mergeCookieFields(rawCookie, {
+    b_lsid: undefined,
+    bili_ticket_expires: undefined,
+    bili_ticket: undefined
+  })
+
+  await envManager.saveEnv('BILI_TASK_COOKIES', cookie, { remark: 'BiliTask 登录 Cookie' })
+  config.cookie = cookie
+  logger.info('已持久化刷新后的 Cookie')
 }
