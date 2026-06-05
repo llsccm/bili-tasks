@@ -1,6 +1,6 @@
 import { defaultConfig } from './config'
 import { loadEnvMap, type EnvMap } from './utils/env'
-import type { AppConfig } from './types'
+import type { AppConfig, LoginFingerprintCache } from './types'
 import { getConfigPath, readJson, writeJson } from './utils/file'
 
 /** 需要从 面板/系统环境变量 中读取的所有 key */
@@ -25,6 +25,25 @@ function applyEnvConfig(config: AppConfig, envMap: EnvMap): AppConfig {
 export function saveRefreshToken(refreshToken: string): void {
   const config = readJson<AppConfig>(CONFIG_PATH, defaultConfig)
   config.refreshToken = refreshToken
+  writeJson(CONFIG_PATH, config)
+}
+
+/**
+ * 从本地配置文件读取登录指纹缓存。
+ */
+export function loadLoginFingerprint(): LoginFingerprintCache | undefined {
+  const config = readJson<AppConfig>(CONFIG_PATH, defaultConfig)
+  const fp = config._loginFingerprint
+  if (fp?.buvid3 && fp._uuid && fp.buvid4) return fp
+  return undefined
+}
+
+/**
+ * 将登录指纹（buvid3/_uuid/buvid4）写入本地配置文件，供下次登录复用。
+ */
+export function saveLoginFingerprint(fingerprint: LoginFingerprintCache): void {
+  const config = readJson<AppConfig>(CONFIG_PATH, defaultConfig)
+  config._loginFingerprint = fingerprint
   writeJson(CONFIG_PATH, config)
 }
 

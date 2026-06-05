@@ -1,7 +1,6 @@
 import type { BiliContext, DynamicVideo, TaskEnv } from '../types'
 import { createLogger, generateBLsid, nowSec, randomBetween, sleep } from '../utils'
 import { setJarCookieFields } from '../utils/cookie'
-import { ensureBiliTicket } from '../context'
 
 function firstVideo(ctx: BiliContext): DynamicVideo | undefined {
   return ctx.dynamicVideos[0]
@@ -118,9 +117,6 @@ export async function runShareTask(env: TaskEnv): Promise<void> {
 
     await sleep(randomBetween(1000, 3000))
   }
-
-  // 分享任务需要 bili_ticket，确保其可用（检查缓存/过期后重新请求）
-  await ensureBiliTicket(env.config, env.ctx)
 
   await sleep(randomBetween(1000, 2000))
 

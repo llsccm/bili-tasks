@@ -2,7 +2,7 @@ import qrcode from 'qrcode-terminal'
 import { PassportApi } from './api/passport'
 import { defaultConfig } from './config'
 import { envManager } from './utils/env'
-import { saveRefreshToken } from './storage'
+import { loadLoginFingerprint, saveLoginFingerprint, saveRefreshToken } from './storage'
 import { createLogger, generateBLsid, generateBuvidFp, generateUuid, sleep } from './utils'
 import {
   createCookieJar,
@@ -67,31 +67,67 @@ async function login(): Promise<void> {
   const jar = createCookieJar()
   const passport = new PassportApi(jar, userAgent)
 
-  // 1. 获取首页 cookie（buvid3、b_nut 等）
-  await passport.fetchHomeCookie()
-  const buvid3 = getJarCookieField(jar, 'buvid3')
-  if (!buvid3) {
-    throw new Error('访问 bilibili 首页响应头 Cookie 缺少 buvid3')
+  // 尝试从配置文件读取上次登录缓存的指纹（buvid3/_uuid/buvid4）
+  const cachedFp = loadLoginFingerprint()
+
+  let buvid3: string
+  let uuid: string
+  let buvid4: string
+
+  if (cachedFp) {
+    // 配置中有缓存，直接复用，无需请求首页和 finger/spi
+    logger.info('从配置文件复用登录指纹缓存')
+    buvid3 = cachedFp.buvid3
+    uuid = cachedFp._uuid
+    buvid4 = cachedFp.buvid4
+
+    // 将缓存的 buvid3 注入 jar（首页请求本应设置的）
+    setJarCookieFields(jar, { buvid3 })
+  } else {
+    // 1. 获取首页 cookie（buvid3、b_nut 等）
+    await passport.fetchHomeCookie()
+    const fetchedBuvid3 = getJarCookieField(jar, 'buvid3')
+    if (!fetchedBuvid3) {
+      throw new Error('访问 bilibili 首页响应头 Cookie 缺少 buvid3')
+    }
+    buvid3 = fetchedBuvid3
+
+    // 2. 生成 _uuid
+    uuid = generateUuid()
+
+    // 4. 获取 buvid4
+    const finger = await passport.getFingerSpi()
+    buvid4 = finger.b_4
+
+    // 保存指纹到配置文件，供下次登录复用
+    saveLoginFingerprint({
+      buvid3,
+      _uuid: uuid,
+      buvid4
+    })
+    logger.info('已保存登录指纹到配置文件（buvid3/_uuid/buvid4）')
   }
 
-  // 2. 补充浏览器指纹类 cookie（_uuid、buvid_fp）
-  //    b_lsid 为 Session cookie，仅注入当次请求 jar，不写入持久化存储
+  // 补充浏览器指纹类 cookie（_uuid、buvid_fp）
+  // b_lsid 为 Session cookie，仅注入当次请求 jar，不写入持久化存储
   setJarCookieFields(jar, {
     b_lsid: generateBLsid(),
-    _uuid: generateUuid(),
+    _uuid: uuid,
     buvid_fp: buvidFp
   })
 
+  // 如果使用缓存指纹则需要补充 b_nut
+  if (cachedFp) await passport.fetchHomeCookie()
+
   // 3. 获取 bili_ticket
   const biliTicket = await passport.fetchBiliTicket()
+
+  // 设置 bili_ticket 和 buvid4
   setJarCookieFields(jar, {
     bili_ticket: biliTicket.ticket,
     bili_ticket_expires: String(biliTicket.created_at + biliTicket.ttl)
   })
-
-  // 4. 获取 buvid4
-  const finger = await passport.getFingerSpi()
-  setJarCookieFields(jar, { buvid4: finger.b_4 })
+  setJarCookieFields(jar, { buvid4 })
 
   logger.info('Cookie 环境准备完成，开始申请登录二维码')
 

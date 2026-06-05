@@ -30,7 +30,8 @@ const QRCODE_GENERATE_API = 'https://passport.bilibili.com/x/passport-login/web/
 const QRCODE_POLL_API = 'https://passport.bilibili.com/x/passport-login/web/qrcode/poll'
 const COOKIE_INFO_API = 'https://passport.bilibili.com/x/passport-login/web/cookie/info'
 const COOKIE_REFRESH_API = 'https://passport.bilibili.com/x/passport-login/web/cookie/refresh'
-const COOKIE_REFRESH_CONFIRM_API = 'https://passport.bilibili.com/x/passport-login/web/confirm/refresh'
+const COOKIE_REFRESH_CONFIRM_API =
+  'https://passport.bilibili.com/x/passport-login/web/confirm/refresh'
 const CORRESPOND_BASE_URL = 'https://www.bilibili.com/correspond/1'
 const CORRESPOND_PUBLIC_KEY_JWK: JsonWebKey = {
   kty: 'RSA',
@@ -122,7 +123,10 @@ export class PassportApi {
    */
   checkCookieRefresh(): Promise<BiliResponse<CookieRefreshInfoData>> {
     const csrf = getJarCookieField(this.jar, 'bili_jct') || ''
-    return this.main.get<BiliResponse<CookieRefreshInfoData>>(COOKIE_INFO_API, csrf ? { csrf } : undefined)
+    return this.main.get<BiliResponse<CookieRefreshInfoData>>(
+      COOKIE_INFO_API,
+      csrf ? { csrf } : undefined
+    )
   }
 
   /**
@@ -155,7 +159,9 @@ export class PassportApi {
     const html = await res.text()
 
     if (!res.ok) {
-      throw new Error(`获取 refresh_csrf 失败: HTTP ${res.status} ${res.statusText}: ${html.slice(0, 500)}`)
+      throw new Error(
+        `获取 refresh_csrf 失败: HTTP ${res.status} ${res.statusText}: ${html.slice(0, 500)}`
+      )
     }
 
     const refreshCsrf = extractRefreshCsrf(html)
@@ -173,7 +179,10 @@ export class PassportApi {
   /**
    * 刷新 Cookie。成功后响应 Set-Cookie 会自动写入当前 CookieJar，并返回新的 refresh_token。
    */
-  async refreshCookie(refreshToken: string, refreshCsrf: string): Promise<BiliResponse<CookieRefreshData>> {
+  async refreshCookie(
+    refreshToken: string,
+    refreshCsrf: string
+  ): Promise<BiliResponse<CookieRefreshData>> {
     const csrf = getJarCookieField(this.jar, 'bili_jct') || ''
     if (!csrf) {
       throw new Error('Cookie 缺少 bili_jct，无法刷新 Cookie')
@@ -275,9 +284,10 @@ export class PassportApi {
    */
   async generateQrCode(): Promise<GenerateQrCodeData> {
     const params = new URLSearchParams({
-      source: 'main-fe-header',
-      go_url: 'https://www.bilibili.com/?spm_id_from=333.937.0.0',
-      web_location: '333.1007',
+      source: 'main_web',
+      go_url: 'https://www.bilibili.com/',
+      web_location: '333.1228',
+      'x-bili-redirect': '1',
       'x-bili-locale-json': '{"c_locale":{"language":"zh","region":"CN"},"always_translate":true}'
     })
     const url = `${QRCODE_GENERATE_API}?${params.toString()}`
@@ -311,9 +321,9 @@ export class PassportApi {
   async pollQrCode(qrcodeKey: string): Promise<BiliResponse<PollQrCodeData>> {
     const params = new URLSearchParams({
       qrcode_key: qrcodeKey,
-      source: 'main-fe-header',
-      go_url: 'https://www.bilibili.com/?spm_id_from=333.937.0.0',
-      web_location: '333.1007',
+      source: 'main_web',
+      web_location: '333.1228',
+      'x-bili-redirect': '1',
       'x-bili-locale-json': '{"c_locale":{"language":"zh","region":"CN"},"always_translate":true}'
     })
     const url = `${QRCODE_POLL_API}?${params.toString()}`
