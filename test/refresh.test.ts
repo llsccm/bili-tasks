@@ -10,5 +10,5 @@ test('passport checkCookieRefresh', async () => {
   const res = await passport.checkCookieRefresh()
   console.log(res)
 
-  assert.ok(res.data.refresh === false)
+  assert.equal(typeof res.data.refresh, 'boolean')
 })

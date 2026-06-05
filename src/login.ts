@@ -116,6 +116,9 @@ async function login(): Promise<void> {
     buvid_fp: buvidFp
   })
 
+  // 如果使用缓存指纹则需要补充 b_nut
+  if (cachedFp) await passport.fetchHomeCookie()
+
   // 3. 获取 bili_ticket
   const biliTicket = await passport.fetchBiliTicket()
 
