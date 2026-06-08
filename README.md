@@ -11,8 +11,8 @@ Bilibili 每日任务脚本，使用 TypeScript 编写并通过 esbuild 打包�
 1. **拉取脚本**：在青龙面板中添加订阅，拉取 `releases` 分支
 2. **填写 UA 和 buvid_fp**: 获取浏览器 UA 和 对应的 buvid_fp, 填写在青龙环境变量 `BILI_UA` 和 `BILI_BUVID_FP` 中
 3. **登录并设置 Cookie**
-   - **扫码登录**：在青龙面板中运行 `login.mjs`，扫描控制台输出的二维码。登录成功后，脚本会自动将 Cookie 添加到青龙环境变量 `BILI_TASK_COOKIES` 中 ~~目前分享视频还会风控 (除非使用 TV 接口)~~
-   - **手动设置**：在浏览器无痕模式下登录获取 Bilibili 的完整 Cookie，并在青龙环境变量中添加 `BILI_TASK_COOKIES`，值为你的 Cookie
+   - **扫码登录**：在青龙面板中运行 `login.mjs`，扫描控制台输出的二维码。登录成功后，脚本会自动将 Cookie 添加到青龙环境变量 `BILI_TASK_COOKIES` 中, 目前分享视频还会风控(除非使用 TV 接口)
+   - **手动设置(推荐)**：在浏览器无痕模式下登录获取 Bilibili 的完整 Cookie，并在青龙环境变量中添加 `BILI_TASK_COOKIES`，值为你的 Cookie
 
 ### 白虎面板
 
@@ -45,7 +45,7 @@ Bilibili 每日任务脚本，使用 TypeScript 编写并通过 esbuild 打包�
         "enabled": true
       },
       "share": {
-        "enabled": true
+        "enabled": false
       },
       "coin": {
         "enabled": false,

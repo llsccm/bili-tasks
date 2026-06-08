@@ -58,6 +58,15 @@ export interface BiliTicketCache {
   expiresAt: number
 }
 
+export interface LoginFingerprintCache {
+  /** bilibili 首页返回的 buvid3 */
+  buvid3: string
+  /** 客户端生成的 _uuid */
+  _uuid: string
+  /** finger/spi 接口返回的 buvid4 */
+  buvid4: string
+}
+
 export interface AppConfig {
   cookie: string
   userAgent: string
@@ -65,6 +74,8 @@ export interface AppConfig {
   refreshToken?: string
   /** biliTicket 缓存，由运行时自动管理，无需手动配置 */
   _biliTicketCache?: BiliTicketCache
+  /** 登录指纹缓存（buvid3/_uuid/buvid4），由登录流程自动管理，下次登录复用 */
+  _loginFingerprint?: LoginFingerprintCache
   DailyTasks: {
     MainSiteTasks: {
       login: MainTaskConfig

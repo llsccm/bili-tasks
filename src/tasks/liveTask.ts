@@ -83,7 +83,7 @@ export async function runLikeMedalTask(env: TaskEnv): Promise<void> {
 
       if (i < medals.length - 1) {
         logger.info(`等待延时中`)
-        await sleep(randomBetween(30000, 35000))
+        await sleep(randomBetween(20000, 30000))
       }
     }
   }
