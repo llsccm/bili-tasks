@@ -107,6 +107,7 @@ export async function initializeContext(
   const reward = await api.user.reward()
   if (reward.code === 0) {
     ctx.dailyRewardInfo = reward.data
+    sleep(randomBetween(1000, 2000))
   } else {
     logger.warn('reward 获取失败', reward.message || reward.msg)
   }
@@ -123,6 +124,7 @@ export async function initializeContext(
 
     if (dynamic.code === 0) {
       ctx.dynamicVideos = parseDynamicVideos(dynamic)
+      sleep(randomBetween(1000, 2000))
     } else {
       logger.warn('dynamicAll 获取失败', dynamic.message || dynamic.msg)
     }
@@ -152,6 +154,8 @@ export async function initializeContext(
           logger.warn(`粉丝勋章第 ${page} 页获取失败`, res.message || res.msg)
         }
       }
+
+      sleep(randomBetween(1000, 2000))
     } else {
       logger.warn('粉丝勋章获取失败', res.message || res.msg)
     }

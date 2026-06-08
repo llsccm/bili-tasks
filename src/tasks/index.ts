@@ -14,7 +14,8 @@ export async function runAllTasks(env: TaskEnv): Promise<void> {
     ['lightMedal', runLightMedalTask],
     ['likeMedal', runLikeMedalTask],
     ['vipPrivilege', runVipPrivilegeTask],
-    ['watchLive', runWatchLiveTask]
+    ['watchLive', runWatchLiveTask],
+    ['likeMedal', runLikeMedalTask]
   ]
 
   for (const [name, task] of tasks) {

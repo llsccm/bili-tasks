@@ -62,7 +62,7 @@ export async function runWatchVideoTask(env: TaskEnv): Promise<void> {
   logger.info(`已模拟打开视频: ${video.aid} ${video.title || ''}`)
 
   // 等待一段随机时间，模拟真实观看间隔
-  await sleep(randomBetween(3000, 6000))
+  await sleep(randomBetween(3000, 9000))
 
   // 第二步：观看视频心跳结束上报（随机 1~14 秒播放时间）
   const finishRes = await env.api.video.videoHeartbeatFinish(
@@ -118,7 +118,7 @@ export async function runShareTask(env: TaskEnv): Promise<void> {
     await sleep(randomBetween(1000, 3000))
   }
 
-  await sleep(randomBetween(1000, 2000))
+  await sleep(randomBetween(1000, 3000))
 
   const res = await env.api.video.share(video.aid, video.bvid)
   if (res.code !== 0 && res.code !== 71000) {
