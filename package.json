@@ -1,7 +1,7 @@
 {
   "name": "bilitasks",
   "version": "0.2.0",
-  "packageManager": "pnpm@11.1.3",
+  "packageManager": "pnpm@11.9.0",
   "description": "QingLong Node.js script for Bilibili live room and daily tasks",
   "type": "module",
   "main": "/src/index.ts",
@@ -11,6 +11,7 @@
     "login:dev": "tsx --env-file=.env src/login.ts",
     "dev": "tsx --env-file=.env src/index.ts",
     "test": "tsx --test test/*.test.ts",
+    "test:live-watch": "tsx --test test/live-room-watch.test.ts",
     "test:share": "tsx --test test/shareTask.test.ts",
     "format": "prettier --write ./src/**/*.{ts,js}",
     "typecheck": "tsc --noEmit",
@@ -28,13 +29,13 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.1.3",
+      "version": "11.9.0",
       "onFail": "download"
     }
   },
   "engines": {
     "node": ">=22.0.0",
-    "pnpm": ">=11.1.3"
+    "pnpm": ">=11.8.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
