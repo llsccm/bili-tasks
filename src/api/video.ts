@@ -216,7 +216,18 @@ export class VideoApi {
         ga: 1,
         csrf: this.ctx.csrf
       },
-      undefined,
+      {
+        'x-bili-locale-json': JSON.stringify({
+          c_locale: { language: 'zh', script: 'Hans' },
+          always_translate: false
+        }),
+        'x-bili-device-req-json': JSON.stringify({
+          platform: 'web',
+          device: 'pc',
+          spmid: '333.788',
+          mobi_app: 'web_cn'
+        })
+      },
       {
         Referer: referer,
         Origin: 'https://www.bilibili.com',
