@@ -3,7 +3,7 @@ import test from 'node:test'
 import { createTestContext } from './loadCookie'
 
 test('api.user.nav 返回正确响应', async () => {
-  const { api } = createTestContext()
+  const { api } = await createTestContext()
 
   const res = await api.user.nav()
 
