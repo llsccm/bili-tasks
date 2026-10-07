@@ -10,13 +10,16 @@ export async function runAllTasks(env: TaskEnv): Promise<void> {
   const tasks: [string, (env: TaskEnv) => Promise<void>][] = [
     ['login', runLoginTask],
     ['watchVideo', runWatchVideoTask],
-    ['share', runShareTask],
     ['lightMedal', runLightMedalTask],
     ['likeMedal', runLikeMedalTask],
     ['vipPrivilege', runVipPrivilegeTask],
     ['watchLive', runWatchLiveTask],
     ['likeMedal', runLikeMedalTask]
   ]
+
+  const shareAfter = new Date().getDate() % 2 === 1 ? 'watchVideo' : 'watchLive'
+  const shareIndex = tasks.findIndex(([name]) => name === shareAfter) + 1
+  tasks.splice(shareIndex, 0, ['share', runShareTask])
 
   for (const [name, task] of tasks) {
     try {
