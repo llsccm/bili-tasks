@@ -1,8 +1,15 @@
 import qrcode from 'qrcode-terminal'
+import { GaiaApi, getFingerPrint } from './api'
 import { PassportApi } from './api/passport'
 import { defaultConfig } from './config'
 import { envManager } from './utils/env'
-import { loadLoginFingerprint, saveLoginFingerprint, saveRefreshToken } from './storage'
+import {
+  loadDeviceFingerprint,
+  loadLoginFingerprint,
+  saveDeviceFingerprint,
+  saveLoginFingerprint,
+  saveRefreshToken
+} from './storage'
 import { createLogger, generateBLsid, generateBuvidFp, generateUuid, sleep } from './utils'
 import {
   createCookieJar,
@@ -162,6 +169,24 @@ async function login(): Promise<void> {
       // 补全 LIVE_BUVID
       const liveBuvid = await passport.fetchLiveBuvid()
       setJarCookieFields(jar, { LIVE_BUVID: liveBuvid })
+
+      // 上报设备指纹激活 Cookie，并将指纹写入配置文件供后续刷新复用
+      try {
+        let deviceFp = loadDeviceFingerprint()
+        if (!deviceFp) {
+          deviceFp = getFingerPrint(userAgent)
+          saveDeviceFingerprint(deviceFp)
+          logger.info('已保存设备指纹到配置文件')
+        } else {
+          logger.info('复用配置文件中的设备指纹')
+        }
+
+        const gaia = new GaiaApi({ cookieJar: jar, userAgent })
+        await gaia.activateCookies(deviceFp)
+        logger.info('已上报 Gaia 设备指纹并激活 Cookie')
+      } catch (error) {
+        logger.warn('上报 Gaia 设备指纹激活失败:', error)
+      }
 
       // 从 jar 导出为字符串存储，过滤掉 b_lsid（Session cookie，不持久化）
       const rawCookie = exportCookieString(jar)

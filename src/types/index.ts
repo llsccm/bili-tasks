@@ -65,6 +65,8 @@ export interface LoginFingerprintCache {
   _uuid: string
   /** finger/spi 接口返回的 buvid4 */
   buvid4: string
+  /** 模拟浏览器设备指纹（Gaia 3c43 载荷） */
+  deviceFingerprint?: Record<string, unknown>
 }
 
 export interface AppConfig {
@@ -76,6 +78,8 @@ export interface AppConfig {
   _biliTicketCache?: BiliTicketCache
   /** 登录指纹缓存（buvid3/_uuid/buvid4），由登录流程自动管理，下次登录复用 */
   _loginFingerprint?: LoginFingerprintCache
+  /** 设备指纹缓存（Gaia 3c43 载荷），用于激活与刷新 Cookie 时复用 */
+  _deviceFingerprint?: Record<string, unknown>
   DailyTasks: {
     MainSiteTasks: {
       login: MainTaskConfig
