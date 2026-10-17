@@ -7,6 +7,7 @@ import { BiliApi, PassportApi } from '../src/api'
 import { defaultConfig } from '../src/config'
 import type { BiliContext } from '../src/types'
 import { createCookieJar, getCsrfFromJar, getBuvid3FromJar, getLiveBuvidFromJar } from '../src/utils/cookie'
+import { createWbiSalt } from '../src/utils/wbi'
 
 export function loadCookieFromEnv(): string {
   const envPath = resolve(process.cwd(), '.env')
@@ -31,7 +32,7 @@ export function createTestJar(): CookieJar {
 /**
  * 创建用于测试的 BiliContext 和 BiliApi。
  */
-export function createTestContext(): { ctx: BiliContext; api: BiliApi } {
+export async function createTestContext(): Promise<{ ctx: BiliContext; api: BiliApi }> {
   const jar = createTestJar()
   const csrf = getCsrfFromJar(jar)
   assert.ok(csrf, 'Cookie 缺少 bili_jct')
@@ -48,6 +49,14 @@ export function createTestContext(): { ctx: BiliContext; api: BiliApi } {
   }
 
   const api = new BiliApi(ctx)
+  const nav = await api.user.nav()
+  assert.equal(nav.code, 0, nav.message || nav.msg)
+  assert.ok(nav.data?.isLogin, 'nav 返回未登录状态')
+
+  ctx.userInfo = nav.data
+  ctx.wbiSalt = createWbiSalt(nav.data.wbi_img?.img_url, nav.data.wbi_img?.sub_url)
+  assert.ok(ctx.wbiSalt, 'nav 缺少 wbi_img，无法生成 WBI salt')
+
   return { ctx, api }
 }
 

@@ -47,6 +47,23 @@ export function saveLoginFingerprint(fingerprint: LoginFingerprintCache): void {
   writeJson(CONFIG_PATH, config)
 }
 
+/**
+ * 从本地配置文件读取设备指纹缓存。
+ */
+export function loadDeviceFingerprint(): Record<string, unknown> | undefined {
+  const config = readJson<AppConfig>(CONFIG_PATH, defaultConfig)
+  return config._deviceFingerprint || config._loginFingerprint?.deviceFingerprint
+}
+
+/**
+ * 将设备指纹（Gaia 3c43 载荷）写入本地配置文件，供刷新或激活 Cookie 时复用。
+ */
+export function saveDeviceFingerprint(fingerprint: Record<string, unknown>): void {
+  const config = readJson<AppConfig>(CONFIG_PATH, defaultConfig)
+  config._deviceFingerprint = fingerprint
+  writeJson(CONFIG_PATH, config)
+}
+
 export async function loadConfig(): Promise<AppConfig> {
   const envMap = await loadEnvMap(ENV_KEYS)
   const config = readJson<AppConfig>(CONFIG_PATH, defaultConfig)

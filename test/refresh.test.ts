@@ -4,7 +4,7 @@ import { createTestContext } from './loadCookie'
 import { PassportApi } from '../src/api'
 
 test('passport checkCookieRefresh', async () => {
-  const { ctx } = createTestContext()
+  const { ctx } = await createTestContext()
 
   const passport = new PassportApi(ctx.cookieJar, ctx.userAgent)
   const res = await passport.checkCookieRefresh()

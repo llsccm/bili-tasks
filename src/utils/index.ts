@@ -90,7 +90,11 @@ export function parseCookie(cookie: string): Record<string, string> {
   return result
 }
 
-const DISALLOWED_CHARS_REGEX = /[!'()*]/g
+const DISALLOWED_CHARS_REGEX = /[!'*]/g
+
+function encodeQueryComponent(value: string): string {
+  return encodeURIComponent(value).replaceAll('%20', '+')
+}
 
 export function queryString(params: Record<string, unknown>, sort = false): string {
   const keys = Object.keys(params)
@@ -104,7 +108,7 @@ export function queryString(params: Record<string, unknown>, sort = false): stri
     // 过滤 null 和 undefined
     if (value !== undefined && value !== null) {
       const cleanValue = String(value).replace(DISALLOWED_CHARS_REGEX, '')
-      parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(cleanValue)}`)
+      parts.push(`${encodeQueryComponent(key)}=${encodeQueryComponent(cleanValue)}`)
     }
   }
 

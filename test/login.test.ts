@@ -9,8 +9,8 @@ import type {
   GenerateQrCodeData,
   PollQrCodeData
 } from '../src/types'
-import { hmacHex, sleep } from '../src/utils'
-import { getCookieField, mergeCookieFields, normalizeCookie } from '../src/utils/cookie'
+import { hmacHex, parseCookie, sleep } from '../src/utils'
+import { mergeCookieFields } from '../src/utils/cookie'
 
 const BILI_HOME_URL = 'https://www.bilibili.com/'
 const FINGER_SPI_API = 'https://api.bilibili.com/x/frontend/finger/spi'
@@ -89,6 +89,31 @@ function getSetCookies(response: Response): string[] {
 
   const cookie = response.headers.get('set-cookie')
   return cookie ? [cookie] : []
+}
+
+function normalizeCookie(cookies: string[]): string {
+  const cookieMap = new Map<string, string>()
+
+  for (const cookie of cookies.flatMap(splitSetCookieHeader)) {
+    const firstPart = cookie.split(';')[0]?.trim()
+    const index = firstPart?.indexOf('=') ?? -1
+
+    if (!firstPart || index <= 0) continue
+
+    cookieMap.set(firstPart.slice(0, index), firstPart.slice(index + 1))
+  }
+
+  return Array.from(cookieMap.entries())
+    .map(([key, value]) => `${key}=${value}`)
+    .join('; ')
+}
+
+function splitSetCookieHeader(cookie: string): string[] {
+  return cookie.split(/,(?=\s*[^;,\s]+=)/).map((item) => item.trim())
+}
+
+function getCookieField(cookie: string, name: string): string | undefined {
+  return parseCookie(cookie)[name]
 }
 
 async function fetchBilibiliHomeCookie(): Promise<string> {

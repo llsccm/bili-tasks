@@ -3,7 +3,7 @@ import test from 'node:test'
 import { createTestContext } from './loadCookie'
 
 test('api.live.fansMedalPanel 获取持有粉丝勋章', async () => {
-  const { api } = createTestContext()
+  const { api } = await createTestContext()
 
   const res = await api.live.fansMedalPanel(1, 5)
 

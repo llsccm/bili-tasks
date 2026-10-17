@@ -70,16 +70,16 @@ export class RoomHeart {
     return [this.ctx.liveBuvid || '', this.deviceUuid]
   }
 
-  async start(): Promise<void> {
+  async start(): Promise<boolean> {
     if (!this.ctx.liveBuvid) {
       console.warn(`[RoomHeart] 缺少 LIVE_BUVID，跳过直播间 ${this.roomID}`)
-      return
+      return false
     }
 
     const res = await this.api.liveTrace.e(this.id, this.device, this.ruid)
     if (res.code !== 0) {
       console.error(`[RoomHeart] E 心跳失败 room=${this.roomID}`, res.message)
-      return
+      return false
     }
 
     this.seq += 1
@@ -89,10 +89,10 @@ export class RoomHeart {
     this.timestamp = res.data.timestamp
 
     await sleep(this.interval * 1000)
-    await this.loopX()
+    return this.loopX()
   }
 
-  private async loopX(): Promise<void> {
+  private async loopX(): Promise<boolean> {
     while (this.watchedSeconds < this.config.maxTime * 60) {
       const now = nowMs()
 
@@ -121,7 +121,7 @@ export class RoomHeart {
 
       if (res.code !== 0) {
         console.error(`[RoomHeart] X 心跳失败 room=${this.roomID}`, res.message)
-        return
+        return false
       }
 
       this.seq += 1
@@ -131,7 +131,11 @@ export class RoomHeart {
       this.secretRule = res.data.secret_rule
       this.timestamp = res.data.timestamp
 
-      await sleep(this.interval * 1000)
+      if (this.watchedSeconds < this.config.maxTime * 60) {
+        await sleep(this.interval * 1000)
+      }
     }
+
+    return true
   }
 }

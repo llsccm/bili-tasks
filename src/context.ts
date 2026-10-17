@@ -1,7 +1,7 @@
 import type { CookieJar } from 'tough-cookie'
-import { BiliApi, PassportApi } from './api'
+import { BiliApi, GaiaApi, getFingerPrint, PassportApi } from './api'
 import { defaultConfig } from './config'
-import { saveRefreshToken } from './storage'
+import { loadDeviceFingerprint, saveDeviceFingerprint, saveRefreshToken } from './storage'
 import type { AppConfig, BiliContext, DynamicVideo, FansMedal } from './types'
 import { createLogger, generateBLsid, randomBetween, sleep } from './utils'
 import {
@@ -277,4 +277,23 @@ async function checkAndRefreshCookie(
   await envManager.saveEnv('BILI_TASK_COOKIES', cookie, { remark: 'BiliTask 登录 Cookie' })
   config.cookie = cookie
   logger.info('已持久化刷新后的 Cookie')
+
+  // 6. 复用配置文件中的指纹上报 Gaia 并激活刷新后的 Cookie
+  try {
+    let deviceFp = config._deviceFingerprint || loadDeviceFingerprint()
+    if (!deviceFp) {
+      deviceFp = getFingerPrint(userAgent)
+      saveDeviceFingerprint(deviceFp)
+      config._deviceFingerprint = deviceFp
+      logger.info('已生成并保存设备指纹到配置文件')
+    } else {
+      logger.info('复用配置文件中的设备指纹激活刷新后的 Cookie')
+    }
+
+    const gaia = new GaiaApi({ cookieJar, userAgent })
+    await gaia.activateCookies(deviceFp)
+    logger.info('已上报 Gaia 设备指纹并激活刷新后的 Cookie')
+  } catch (error) {
+    logger.warn('激活刷新后的 Cookie 失败:', error)
+  }
 }

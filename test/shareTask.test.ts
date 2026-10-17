@@ -3,7 +3,7 @@ import test from 'node:test'
 import { createTestContext } from './loadCookie'
 
 test('api.video.share 分享默认视频', async () => {
-  const { ctx, api } = createTestContext()
+  const { ctx, api } = await createTestContext()
 
   ctx.dynamicVideos = [
     {

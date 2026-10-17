@@ -18,6 +18,23 @@ export class BiliRequest {
     return this.fetchJson<T>(url, { method: 'GET', headers })
   }
 
+  async postJson<T>(
+    path: string,
+    body: unknown,
+    params?: Record<string, unknown> | string,
+    headers?: HeadersInit
+  ): Promise<T> {
+    const url = this.buildUrl(path, params)
+    return this.fetchJson<T>(url, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: {
+        'Content-Type': 'application/json;charset=UTF-8',
+        ...headers
+      }
+    })
+  }
+
   async postForm<T>(
     path: string,
     body?: Record<string, unknown> | null,

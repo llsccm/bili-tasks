@@ -1,7 +1,7 @@
 {
   "name": "bilitasks",
   "version": "0.2.0",
-  "packageManager": "pnpm@11.9.0",
+  "packageManager": "pnpm@11.21.0",
   "description": "QingLong Node.js script for Bilibili live room and daily tasks",
   "type": "module",
   "main": "/src/index.ts",
@@ -29,13 +29,13 @@
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.9.0",
+      "version": "11.21.0",
       "onFail": "download"
     }
   },
   "engines": {
     "node": ">=22.0.0",
-    "pnpm": ">=11.8.0"
+    "pnpm": ">=11.21.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
