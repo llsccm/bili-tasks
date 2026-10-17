@@ -43,7 +43,7 @@
     "@types/node": "^24.10.0",
     "@types/qrcode-terminal": "^0.12.2",
     "esbuild": "^0.28.0",
-    "eslint": "^10.4.0",
+    "eslint": "^10.8.1",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.6.0",
     "jiti": "^2.7.0",
