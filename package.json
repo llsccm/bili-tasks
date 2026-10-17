@@ -42,7 +42,7 @@
     "@stylistic/eslint-plugin": "^5.10.0",
     "@types/node": "^24.10.0",
     "@types/qrcode-terminal": "^0.12.2",
-    "esbuild": "^0.28.0",
+    "esbuild": "^0.28.2",
     "eslint": "^10.4.0",
     "eslint-config-prettier": "^10.1.8",
     "globals": "^17.6.0",
