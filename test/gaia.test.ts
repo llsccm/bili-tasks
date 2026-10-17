@@ -65,10 +65,30 @@ test('activateCookies POSTs nested Gaia payload with jar cookies and configured 
   }
 })
 
-test('activateCookies rejects when CookieJar has no _uuid', () => {
+test('activateCookies rejects when CookieJar has no _uuid', async () => {
   const api = new BiliApi(createContext('buvid3=test-buvid3'))
 
-  assert.throws(() => api.activateCookies(), /Cookie 缺少 _uuid/)
+  await assert.rejects(() => api.activateCookies(), /Cookie 缺少 _uuid/)
+})
+
+test('activateCookies rejects when response code is non-zero', async () => {
+  const api = new BiliApi(
+    createContext('_uuid=test-uuid; buvid3=test-buvid3; SESSDATA=test-sessdata')
+  )
+  const originalFetch = globalThis.fetch
+
+  globalThis.fetch = (async () => {
+    return new Response(JSON.stringify({ code: -400, message: '请求错误' }), { headers: { 'Content-Type': 'application/json' } })
+  }) as typeof fetch
+
+  try {
+    await assert.rejects(
+      () => api.activateCookies(),
+      /上报 Gaia 设备信息失败: \[-400\] 请求错误/
+    )
+  } finally {
+    globalThis.fetch = originalFetch
+  }
 })
 
 test('activateCookies reuses provided fingerprint instead of generating new random values', async () => {

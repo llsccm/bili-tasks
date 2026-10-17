@@ -1,5 +1,5 @@
 import { randomBytes, randomInt } from 'node:crypto'
-import type { BiliContext } from '../types'
+import type { BiliContext, BiliResponse } from '../types'
 import { getJarCookieField } from '../utils/cookie'
 import { BiliRequest } from './request'
 
@@ -297,17 +297,25 @@ export class GaiaApi {
    * 上报 Gaia 设备信息并激活当前 Cookie。
    * 支持传入持久化的设备指纹以保持环境特征一致。
    */
-  activateCookies(fingerprint?: Record<string, unknown>): Promise<unknown> {
+  async activateCookies(fingerprint?: Record<string, unknown>): Promise<BiliResponse<unknown>> {
     const uuid = getJarCookieField(this.ctx.cookieJar, '_uuid')
     if (!uuid) {
       throw new Error('Cookie 缺少 _uuid，无法上报 Gaia 设备信息')
     }
 
-    return this.main.postJson<unknown>(
+    const res = await this.main.postJson<BiliResponse<unknown>>(
       GAIA_ACTIVATE_COOKIES_API,
       buildActivateCookiesPayload(uuid, this.ctx.userAgent, fingerprint),
       undefined,
       { Referer: BILI_HOME_URL }
     )
+
+    if (res?.code !== 0) {
+      throw new Error(
+        `上报 Gaia 设备信息失败: [${res?.code}] ${res?.message || res?.msg || '未知错误'}`
+      )
+    }
+
+    return res
   }
 }

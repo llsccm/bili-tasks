@@ -6,7 +6,6 @@ import { RoomHeart } from '../src/tasks/live-heart'
 import { createTestContext } from './loadCookie'
 
 test('RoomHeart 观看指定直播间', async (t) => {
-  const { ctx, api } = await createTestContext()
   const roomId =
     readPositiveIntegerEnv('BILI_TEST_LIVE_ROOM_ID') ?? readPositiveIntegerEnv('BILI_LIVE_ROOM_ID')
   const roomUid =
@@ -23,6 +22,8 @@ test('RoomHeart 观看指定直播间', async (t) => {
     t.skip('设置 BILI_TEST_LIVE_ROOM_UID 后运行指定直播间观看测试')
     return
   }
+
+  const { ctx, api } = await createTestContext()
 
   if (!ctx.liveBuvid) {
     const passport = new PassportApi(ctx.cookieJar, ctx.userAgent)
